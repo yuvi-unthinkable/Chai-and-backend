@@ -17,9 +17,11 @@ import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
+
+
 router.route("/register").post(
   upload.fields([
-    {
+    {  
       name: "avatar",
       maxCount: 1,
     },
@@ -31,17 +33,25 @@ router.route("/register").post(
   registerUser
 );
 
+
 router.route("/login").post(loginUser);
+router.get('/verify-token', verifyJWT, (req, res) => {
+    res.status(200).json({user : req.user});
+})
 
 // secured routes
+router.route("/homepage").post(verifyJWT, logoutUser);
 router.route("/logout").post(verifyJWT, logoutUser);
-router.route("/refresh-token").post(refreshAcessToken)
-router.route("/change-password").post(verifyJWT, changeCurrentPassword)
-router.route("/current-user").get(verifyJWT, getCurrentUser)
-router.route("/update-account").patch(verifyJWT, updateAccountDetails)
-router.route("avatar").patch(verifyJWT, upload.single("avatar"),updateUserAvatar)
-router.router("/cover-image").patch(verifyJWT, upload.single("coverImage"), updateUserCoverImage)
-router.route("/c/:username").get(verifyJWT, getUserChannelProfile)
-router.route("/watchHistor").get(verifyJWT, getWatchHistory)
+router.route("/logout").post(verifyJWT, logoutUser);
+
+
+// router.route("/refresh-token").post(refreshAcessToken)
+// router.route("/change-password").post(verifyJWT, changeCurrentPassword)
+// router.route("/current-user").get(verifyJWT, getCurrentUser)
+// router.route("/update-account").patch(verifyJWT, updateAccountDetails)
+// router.route("avatar").patch(verifyJWT, upload.single("avatar"),updateUserAvatar)
+// router.route("/cover-image").patch(verifyJWT, upload.single("coverImage"), updateUserCoverImage)
+// router.route("/c/:username").get(verifyJWT, getUserChannelProfile)
+// router.route("/watchHistor").get(verifyJWT, getWatchHistory)
 
 export default router;

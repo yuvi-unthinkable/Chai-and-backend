@@ -5,11 +5,10 @@ import jwt from 'jsonwebtoken'
 
 
 export const verifyJWT = asyncHandler(async (req, _, next) => {
-    console.log("🚀 ~ req:", req?.cookies)
-    console.log("🚀 ~ req?.cookies:", req?.cookies?.['accessToken'])
+ 
     try {
+        // here we are using option chaining so that error can be avoided while accessing hte nested objects
         const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer", "")
-        console.log("🚀 ~ token:", token)
 
         if (!token || token===undefined) {
             throw new ApiError(401, "unauthorized request")
