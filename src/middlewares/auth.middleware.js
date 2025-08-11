@@ -7,7 +7,7 @@ import jwt from 'jsonwebtoken'
 export const verifyJWT = asyncHandler(async (req, _, next) => {
  
     try {
-        // here we are using option chaining so that error can be avoided while accessing hte nested objects
+        // here we are using option chaining so that error can be avoided while accessing the nested objects
         const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer", "")
 
         if (!token || token===undefined) {

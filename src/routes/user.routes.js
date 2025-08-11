@@ -11,6 +11,7 @@ import {
   updateUserCoverImage,
   getUserChannelProfile,
   getWatchHistory, 
+  addHotels,
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -36,20 +37,30 @@ router.route("/register").post(
 
 router.route("/login").post(loginUser);
 router.get('/verify-token', verifyJWT, (req, res) => {
+    console.log("🚀 ~ req:", req)
+    // console.log("🚀 ~ verify-token:", verify-token)
     res.status(200).json({user : req.user});
+    
 })
+
+
+// only admin will be able to accress this route
+router.route("/addHotels").post(verifyJWT, addHotels)
+
+
+
+// these soutes can be accessed by bth the admin and the user
 
 // secured routes
 router.route("/homepage").post(verifyJWT, logoutUser);
 router.route("/logout").post(verifyJWT, logoutUser);
-router.route("/logout").post(verifyJWT, logoutUser);
 
 
-// router.route("/refresh-token").post(refreshAcessToken)
-// router.route("/change-password").post(verifyJWT, changeCurrentPassword)
+router.route("/refresh-token").post(refreshAcessToken)
+router.route("/change-password").post(verifyJWT, changeCurrentPassword)
 // router.route("/current-user").get(verifyJWT, getCurrentUser)
-// router.route("/update-account").patch(verifyJWT, updateAccountDetails)
-// router.route("avatar").patch(verifyJWT, upload.single("avatar"),updateUserAvatar)
+router.route("/update-account").patch(verifyJWT, updateAccountDetails)
+router.route("avatar").patch(verifyJWT, upload.single("avatar"),updateUserAvatar)
 // router.route("/cover-image").patch(verifyJWT, upload.single("coverImage"), updateUserCoverImage)
 // router.route("/c/:username").get(verifyJWT, getUserChannelProfile)
 // router.route("/watchHistor").get(verifyJWT, getWatchHistory)

@@ -33,10 +33,16 @@ const userSchema = new Schema(
         coverImage : {
             type : String,
         },
-        watchHistory : [
+        role : {
+            type : String, 
+            enum : ["user", "admin"], 
+            default : "user", 
+            required : true
+        },
+        bookHistory : [
             {
                 type: Schema.Types.ObjectId,
-                ref : "Video"
+                ref : "Hotel"
             }
         ],
         password : {
