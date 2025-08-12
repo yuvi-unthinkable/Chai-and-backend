@@ -6,6 +6,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import mongoose, { mongo, set } from "mongoose";
 import jwt from "jsonwebtoken";
 import { Hotel } from "../models/hotel.model.js";
+import connectDB from "../db/index.js";
 
 const generateAcessAndRefreshTokens = async (userId) => {
   try {
@@ -28,7 +29,7 @@ const generateAcessAndRefreshTokens = async (userId) => {
 };
 
 const registerUser = asyncHandler(async (req, res) => {
-  console.log("🚀 ~ req:", req);
+  // console.log("🚀 ~ req:", req);
   // get user details from frontend
   // validation
   // check if user already exists : from email and username
@@ -40,10 +41,10 @@ const registerUser = asyncHandler(async (req, res) => {
   // return response
 
   try {
-    const { fullName, email, username, password,role } = req.body;
+    const { fullName, email, username, password, role } = req.body;
 
     if (
-      [fullName, email, username, password,role].some(
+      [fullName, email, username, password, role].some(
         (field) => field?.trim() === ""
       )
     ) {
@@ -266,48 +267,78 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 });
 
 const addHotels = asyncHandler(async (req, res) => {
- console.log("🚀 ~ req:", req)
- try {
-   const { hotelName, hotelAboutData } = req.body;
+  try {
+    if (!req.user || req.user.role !== "admin") {
+      throw new ApiError(400, "The user is not an admin");
+    }
 
-   console.log("🚀 ~ req.User:", req.User)
-   if(!req.user || req.user.role !== "admin"){
-    throw new ApiError(400, "The user is not an admin")
-   }
- 
-   if (!hotelName || !hotelAboutData) {
-     throw new ApiError(400, "hotelname and hotel about data is important ");
-   }
- 
-   const existingHotel = await Hotel.findOne({ hotelName });
- 
-   if (existingHotel) {
-     throw new ApiError(409, "Hotel already exists");
-   }
- 
-   const hotel = await Hotel.create ({
-     hotelName,
-     hotelAboutData,
-   })
- 
-   const createdHotel = await Hotel.findOne({ hotelName });
- 
-   if(!createdHotel) {
-     throw new ApiError (400, "something went wrong while registering hotel")
-   }
- 
-   return res
-   .status(200)
-   .json( new ApiResponse(200, createdHotel, "hotel is registered sucessfully"))
- } catch (error) {
-  console.log("🚀 ~ error:", error)
-  return res
-  .status(200)
-  .json(new ApiError(200, "Something went wrong while registering the hotel"))
-  
- }
+    const { hotelName, hotelAboutData } = req.body;
 
+    if (!hotelName || !hotelAboutData) {
+      throw new ApiError(400, "hotelname and hotel about data is important ");
+    }
 
+    const existingHotel = await Hotel.findOne({ hotelName });
+
+    if (existingHotel) {
+      throw new ApiError(409, "Hotel already exists");
+    }
+
+    if (!req.files || req.files.length < 1) {
+      console.log("🚀 ~ req.files.length:", req.files.length);
+      return res
+        .status(400)
+        .json(new ApiError(400, "provide at least one image"));
+    }
+    if (req.files.length > 5) {
+      return res
+        .status(400)
+        .json(new ApiError(400, " at most 5 photos can be uploaded"));
+    }
+
+    const photoPath = req.files.map((file) => file.path);
+
+    const photos = [];
+    for (let path of photoPath) {
+      const uploaded = await uploadOnCloudinary(path);
+      if (uploaded.url)
+        photos.push({
+          url: uploaded.url,
+          public_id: uploaded.public_id,
+        });
+    }
+
+    if (photos.length < 1) {
+      throw new ApiError(400, "Error while uploading photos to Cloudinary");
+    } else {
+      console.log("photos uploaded on cloudinary");
+    }
+
+    const hotel = await Hotel.create({
+      hotelName,
+      hotelAboutData,
+      photos,
+    });
+
+    //  if(!hotel) {
+    //    throw new ApiError (400, "something went wrong while registering hotel")
+    //  }
+
+    return res
+      .status(201)
+      .json(new ApiResponse(201, hotel, "hotel is registered sucessfully"));
+  } catch (error) {
+    console.log("🚀 ~ error:", error);
+    return res
+      .status(500)
+      .json(
+        new ApiError(
+          500,
+          "Something went wrong while registering the hotel",
+          error
+        )
+      );
+  }
 });
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
@@ -333,30 +364,28 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
 });
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
-  const avatarLocalPath = req.files?.path;
+  const avatarLocalPath = req.file?.path;
+  // console.log("🚀 ~ avatarLocalPath:", avatarLocalPath)
 
   if (!avatarLocalPath) {
-    throw new ApiError(400, "Avatar fie is missing");
+    throw new ApiError(400, "Avatar image is required");
   }
+
   const avatar = await uploadOnCloudinary(avatarLocalPath);
 
-  if (!avatar.url) {
-    throw new ApiError(400, "Error while uploading on avatar");
+  if (!avatar?.url) {
+    throw new ApiError(400, "Error while uploading avatar to Cloudinary");
   }
 
   const user = await User.findByIdAndUpdate(
     req.user?._id,
-    {
-      $set: {
-        avatar: avatar.url,
-      },
-    },
+    { $set: { avatar: avatar.url } },
     { new: true }
   ).select("-password");
 
   return res
     .status(200)
-    .json(new ApiResponse(200, user, "Avatar image updates sucessfully"));
+    .json(new ApiResponse(200, user, "Avatar image updated successfully"));
 });
 
 const updateUserCoverImage = asyncHandler(async (req, res) => {
@@ -510,6 +539,34 @@ const getWatchHistory = asyncHandler(async (req, res) => {
     );
 });
 
+const getHotels = asyncHandler(async (req, res) => {
+  try {
+    const hotels = await Hotel.find({});
+    res.status(200).json(new ApiResponse(200, hotels, "Hotels list fetched"));
+  } catch (error) {
+    res.status(500).json(new ApiError(500, "Error while fetching the hotels"));
+  }
+});
+
+const deleteHotel = asyncHandler(async (req, res) => {
+  try {
+    if (req.user.role !== "admin")
+      throw new ApiError(401, "user doesn't have access to delete hotels");
+    const {hotelName} = req.body;
+    await Hotel.findOneAndDelete( {hotelName});
+     if (!await Hotel.findOne({hotelName}))
+      console.log("hotel is deleated");
+    return res
+    .status(200)
+    .json(new ApiResponse(200, hotelName, `${hotelName} is deleted`))
+  } catch (error) {
+    console.log("🚀 ~ error:", error);
+    return res
+    .status(401)
+    .json(new ApiError(401, "something went wrong the user is not deleted"))
+  }
+});
+
 export {
   registerUser,
   loginUser,
@@ -523,4 +580,6 @@ export {
   getUserChannelProfile,
   getWatchHistory,
   addHotels,
+  getHotels,
+  deleteHotel,
 };

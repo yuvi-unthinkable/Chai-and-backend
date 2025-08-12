@@ -11,7 +11,19 @@ const hotelSchema = new Schema ({
         type : String,
         required : true,
 
-    }
+    },
+    photos : [
+        {
+            url : {
+                type : String,
+                required : true
+            },
+            public_id : {
+                type : String,
+                required : true
+            }
+        }
+    ]
 }, {timestamps : true})
 
 export const Hotel = mongoose.model("Hotel", hotelSchema)
