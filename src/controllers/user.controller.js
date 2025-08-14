@@ -567,6 +567,23 @@ const deleteHotel = asyncHandler(async (req, res) => {
   }
 });
 
+const HotelDetailPage = asyncHandler(async(req, res) => {
+try {
+    const id = req.params.id
+    // console.log("🚀 ~ id:", id)
+    const hotel = await Hotel.findOne({'_id': id})
+    // console.log("🚀i am here1 ~ hotel:", hotel)
+    return res.status(200)
+    .json(new ApiResponse(200, hotel, "hotel details fetched"))
+} catch (error) {
+  console.log("🚀 ~ error:", error)
+  return res
+  .status(400)
+  .json(new ApiError(400, "something went wrong while fetching hotel detail"))
+  
+}
+})
+
 export {
   registerUser,
   loginUser,
@@ -582,4 +599,5 @@ export {
   addHotels,
   getHotels,
   deleteHotel,
+  HotelDetailPage,
 };
