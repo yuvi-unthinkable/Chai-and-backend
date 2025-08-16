@@ -1,26 +1,43 @@
 import mongoose, { Schema } from "mongoose";
 import { User } from "./user.model";
 import { Hotel } from "./hotel.model";
+import { Room } from "./HotelRooms.model";
 
 const bookingSchema =  new Schema({
-    hotelName : {
+    hotel : {
         type : Schema.Types.ObjectId,
         ref : Hotel,
         required : true
     },
-    bookedBy : {
+    user : {
         type : Schema.Types.ObjectId,
         ref : User,
         required : true
     },
+    hotelRooms : {
+        type : [Schema.Types.ObjectId],
+        ref : Room,
+        required : true
+    },
     bookingAmount : {
-        type : Number
+        type : Number,
+        required : true
     },
     bookingForPeoples : { 
-        type : Number
+        type : Number,
+        required : true
     },
-    bookingNoOfRooms : {
-        type : Number
+    bookingDate : {
+        type : Date,
+        required : true
+    },
+    checkInData : {
+        type : Date,
+        required : true
+    },
+    checkOutData : {
+        type : Date,
+        required : true
     }
 }, {timestamps : true})
 

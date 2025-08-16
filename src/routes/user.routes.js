@@ -15,6 +15,7 @@ import {
   getHotels,
   deleteHotel,
   HotelDetailPage,
+  addRooms,
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -67,5 +68,8 @@ router.route("/delete-hotel").post(verifyJWT, deleteHotel);
 
 router.route("/get-hotels").get(verifyJWT, getHotels);
 router.route("/hotel-details/:id").get(verifyJWT, HotelDetailPage)
+router.route("/add-rooms").post(verifyJWT,upload.single("roomPhoto"),addRooms);
+// router.route("/booking").post(verifyJWT, booking);
 
 export default router;
+  

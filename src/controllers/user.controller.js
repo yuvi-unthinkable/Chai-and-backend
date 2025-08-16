@@ -6,8 +6,8 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import mongoose, { mongo, set } from "mongoose";
 import jwt from "jsonwebtoken";
 import { Hotel } from "../models/hotel.model.js";
+import { Room } from "../models/HotelRooms.model.js";
 import connectDB from "../db/index.js";
-
 const generateAcessAndRefreshTokens = async (userId) => {
   try {
     const user = await User.findById(userId);
@@ -552,37 +552,84 @@ const deleteHotel = asyncHandler(async (req, res) => {
   try {
     if (req.user.role !== "admin")
       throw new ApiError(401, "user doesn't have access to delete hotels");
-    const {hotelName} = req.body;
-    await Hotel.findOneAndDelete( {hotelName});
-     if (!await Hotel.findOne({hotelName}))
-      console.log("hotel is deleated");
+    const { hotelName } = req.body;
+    await Hotel.findOneAndDelete({ hotelName });
+    if (!(await Hotel.findOne({ hotelName }))) console.log("hotel is deleated");
     return res
-    .status(200)
-    .json(new ApiResponse(200, hotelName, `${hotelName} is deleted`))
+      .status(200)
+      .json(new ApiResponse(200, hotelName, `${hotelName} is deleted`));
   } catch (error) {
     console.log("🚀 ~ error:", error);
     return res
-    .status(401)
-    .json(new ApiError(401, "something went wrong the user is not deleted"))
+      .status(401)
+      .json(new ApiError(401, "something went wrong the user is not deleted"));
   }
 });
 
-const HotelDetailPage = asyncHandler(async(req, res) => {
-try {
-    const id = req.params.id
-    // console.log("🚀 ~ id:", id)
-    const hotel = await Hotel.findOne({'_id': id})
-    // console.log("🚀i am here1 ~ hotel:", hotel)
-    return res.status(200)
-    .json(new ApiResponse(200, hotel, "hotel details fetched"))
-} catch (error) {
-  console.log("🚀 ~ error:", error)
-  return res
-  .status(400)
-  .json(new ApiError(400, "something went wrong while fetching hotel detail"))
+const HotelDetailPage = asyncHandler(async (req, res) => {
+  try {
+    const id = req.params.id;
+    const hotel = await Hotel.findOne({ _id: id });
+    if(!hotel) 
+      throw new ApiError(404, "Hotel not found")
+
+    const rooms = await Room.find({hotelId : id})
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, {hotel, rooms}, "hotel details fetched"));
+  } catch (error) {
+    console.log("🚀 ~ error:", error);
+    return res
+      .status(400)
+      .json(
+        new ApiError(400, "something went wrong while fetching hotel detail")
+      );
+  }
+});
+
+const addRooms = asyncHandler(async (req, res) => {
+  // console.log("🚀 ~ req-body it is:", req.body)
+  if (!req.user || req.user.role !== "admin") {
+    throw new ApiError(400, "This user is not an admin");
+  }
+  try {
+    const { hotelId, roomType, noOfPersons, price, description } = req.body;
+    const roomPhotoLocalPath = req.file?.path;
+    // console.log("🚀 ~ Photo:", photo)
+    if(!roomPhotoLocalPath) throw new ApiError(404, " room photo is required")
+
+    const roomPhotoPath = await uploadOnCloudinary(roomPhotoLocalPath)
+
+    if(!roomPhotoPath?.url) throw new ApiError(404, "error occured while uoloading the hotel image on cloudinary")
+
+    
+
+    if(!hotelId)
+      throw new ApiError(400, "Hotel ID is required")
+
+    const room = await Room.create({
+      roomType,
+      noOfPersons,
+      price,
+      description,
+      roomPhoto : roomPhotoPath.url,
+      hotelId,
+    });
+
+    res.status(200).json(new ApiResponse(200, room, "room has been added"));
+  } catch (error) {
+    console.log("🚀 ~ error:", error);
+    res.status(401).json(new ApiError(401, "Something went wrong while adding the rooms"))
+  }
+});
+
+const booking = asyncHandler ( async (req, res) => {
   
-}
-})
+
+
+
+}) 
 
 export {
   registerUser,
@@ -600,4 +647,5 @@ export {
   getHotels,
   deleteHotel,
   HotelDetailPage,
+  addRooms,
 };
