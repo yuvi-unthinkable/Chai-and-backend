@@ -1,6 +1,8 @@
 import { mongoose, Schema } from "mongoose";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt"
+import { Hotel } from "./hotel.model.js";
+import { Room } from "./HotelRooms.model.js";
 
 const userSchema = new Schema(
     {
@@ -51,6 +53,14 @@ const userSchema = new Schema(
         },
         refreshToken :{
             type : String,
+        },
+        hotel : {
+            type : Schema.Types.ObjectId,
+            ref : Hotel,
+        },
+        room : {
+            type : Schema.Types.ObjectId,
+            ref : Room
         }
     }, {timestamps : true }
 )

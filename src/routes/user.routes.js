@@ -8,14 +8,17 @@ import {
   getCurrentUser,
   updateAccountDetails,
   updateUserAvatar,
-  updateUserCoverImage,
-  getUserChannelProfile,
-  getWatchHistory,
+  // updateUserCoverImage,
+  // getUserChannelProfile,
+  // getWatchHistory,
   addHotels,
   getHotels,
   deleteHotel,
   HotelDetailPage,
   addRooms,
+  bookings,
+  cart,
+  getAvailableRooms,
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -38,38 +41,30 @@ router.route("/register").post(
 );
 
 router.route("/login").post(loginUser);
-router.get("/verify-token", verifyJWT, (req, res) => {
-  console.log("🚀 ~ req:", req);
+router.get("/verify-token",   verifyJWT, (req, res) => {
+  // console.log("🚀 ~ req:", req);
   // console.log("🚀 ~ verify-token:", verify-token)
   res.status(200).json({ user: req.user });
 });
 
 // only admin will be able to accress this route
-router
-  .route("/addHotels")
-  .post(verifyJWT, upload.array("photos", 5), addHotels);
+router.route("/addHotels").post(verifyJWT, upload.array("photos", 5), addHotels);
 
 // these soutes can be accessed by bth the admin and the user
 
 // secured routes
 router.route("/logout").post(verifyJWT, logoutUser);
-
 router.route("/refresh-token").post(refreshAcessToken);
 router.route("/change-password").post(verifyJWT, changeCurrentPassword);
 router.route("/current-user").get(verifyJWT, getCurrentUser);
 router.route("/update-account").patch(verifyJWT, updateAccountDetails);
-router
-  .route("/avatar-update")
-  .patch(verifyJWT, upload.single("avatar"), updateUserAvatar);
+router.route("/avatar-update").patch(verifyJWT, upload.single("avatar"), updateUserAvatar);
 router.route("/delete-hotel").post(verifyJWT, deleteHotel);
-// router.route("/cover-image").patch(verifyJWT, upload.single("coverImage"), updateUserCoverImage)
-// router.route("/c/:username").get(verifyJWT, getUserChannelProfile)
-// router.route("/watchHistor").get(verifyJWT, getWatchHistory)
-
 router.route("/get-hotels").get(verifyJWT, getHotels);
-router.route("/hotel-details/:id").get(verifyJWT, HotelDetailPage)
-router.route("/add-rooms").post(verifyJWT,upload.single("roomPhoto"),addRooms);
-// router.route("/booking").post(verifyJWT, booking);
+router.route("/hotel-details/:id").get(verifyJWT, HotelDetailPage);
+router.route("/rooms-available/:id").post(getAvailableRooms);
+router.route("/add-rooms").post(verifyJWT, upload.single("roomPhoto"), addRooms);
+router.route("/cart").post(verifyJWT, cart);
+router.route("/bookings").get(verifyJWT, bookings);
 
 export default router;
-  

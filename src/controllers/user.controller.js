@@ -8,6 +8,8 @@ import jwt from "jsonwebtoken";
 import { Hotel } from "../models/hotel.model.js";
 import { Room } from "../models/HotelRooms.model.js";
 import connectDB from "../db/index.js";
+import { Booking } from "../models/Booking.model.js";
+
 const generateAcessAndRefreshTokens = async (userId) => {
   try {
     const user = await User.findById(userId);
@@ -415,129 +417,129 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "cover image updates sucessfully"));
 });
 
-const getUserChannelProfile = asyncHandler(async (req, res) => {
-  const { username } = req.params;
+// const getUserChannelProfile = asyncHandler(async (req, res) => {
+//   const { username } = req.params;
 
-  if (!username?.trim()) {
-    throw new ApiError(400, "Username not fetched");
-  }
+//   if (!username?.trim()) {
+//     throw new ApiError(400, "Username not fetched");
+//   }
 
-  const channel = await User.aggregate([
-    {
-      $match: {
-        username: username?.toLowerCase(),
-      },
-    },
-    {
-      $lookup: {
-        from: "subscriptions",
-        localField: "_id",
-        foriegnFIeld: "channel",
-        as: "subscribers",
-      },
-    },
-    {
-      $lookup: {
-        from: "subscriptions",
-        localField: "_id",
-        foriegnFIeld: "subscriber",
-        as: "subscribedTo",
-      },
-    },
-    {
-      $addFields: {
-        subscribersCount: {
-          $size: "$subscribers",
-        },
-        channelsSubscribedToCount: {
-          $size: "$subscribeTo",
-        },
-      },
-    },
-    {
-      isSUbscribed: {
-        $cond: {
-          if: { $in: [req.user?._id, "$subscribers.subscriber"] },
-          then: true,
-          else: false,
-        },
-      },
-    },
-    {
-      $project: {
-        fullName: 1,
-        username: 1,
-        subscribersCount: 1,
-        channelsSubscribedToCount: 1,
-        avatar: 1,
-        coverImage: 1,
-        email: 1,
-      },
-    },
-  ]);
+//   const channel = await User.aggregate([
+//     {
+//       $match: {
+//         username: username?.toLowerCase(),
+//       },
+//     },
+//     {
+//       $lookup: {
+//         from: "subscriptions",
+//         localField: "_id",
+//         foriegnFIeld: "channel",
+//         as: "subscribers",
+//       },
+//     },
+//     {
+//       $lookup: {
+//         from: "subscriptions",
+//         localField: "_id",
+//         foriegnFIeld: "subscriber",
+//         as: "subscribedTo",
+//       },
+//     },
+//     {
+//       $addFields: {
+//         subscribersCount: {
+//           $size: "$subscribers",
+//         },
+//         channelsSubscribedToCount: {
+//           $size: "$subscribeTo",
+//         },
+//       },
+//     },
+//     {
+//       isSUbscribed: {
+//         $cond: {
+//           if: { $in: [req.user?._id, "$subscribers.subscriber"] },
+//           then: true,
+//           else: false,
+//         },
+//       },
+//     },
+//     {
+//       $project: {
+//         fullName: 1,
+//         username: 1,
+//         subscribersCount: 1,
+//         channelsSubscribedToCount: 1,
+//         avatar: 1,
+//         coverImage: 1,
+//         email: 1,
+//       },
+//     },
+//   ]);
 
-  if (channel?.length) {
-    throw new ApiError(404, "Channel does not exists");
-  }
+//   if (channel?.length) {
+//     throw new ApiError(404, "Channel does not exists");
+//   }
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, channel[0], "user channel fetched sucessfully"));
-});
+//   return res
+//     .status(200)
+//     .json(new ApiResponse(200, channel[0], "user channel fetched sucessfully"));
+// });
 
-const getWatchHistory = asyncHandler(async (req, res) => {
-  const user = await User.aggregate([
-    {
-      $match: {
-        _id: new mongoose.Types.ObjectId.createFromHexString(req.user._id),
-      },
-    },
-    {
-      $lookup: {
-        from: "videos",
-        localField: "watchHistory",
-        foreignField: "_id",
-        as: "watchHistory",
-        pipeline: [
-          {
-            $lookup: {
-              from: "users",
-              localField: "owner",
-              foriegnFIeld: "_id",
-              as: "owner",
-              pipeline: [
-                {
-                  $project: {
-                    fullName: 1,
-                    username: 1,
-                    avatar: 1,
-                  },
-                },
-              ],
-            },
-          },
-          {
-            $addFields: {
-              owner: {
-                $first: "$owner",
-              },
-            },
-          },
-        ],
-      },
-    },
-  ]);
+// const getWatchHistory = asyncHandler(async (req, res) => {
+//   const user = await User.aggregate([
+//     {
+//       $match: {
+//         _id: new mongoose.Types.ObjectId.createFromHexString(req.user._id),
+//       },
+//     },
+//     {
+//       $lookup: {
+//         from: "videos",
+//         localField: "watchHistory",
+//         foreignField: "_id",
+//         as: "watchHistory",
+//         pipeline: [
+//           {
+//             $lookup: {
+//               from: "users",
+//               localField: "owner",
+//               foriegnFIeld: "_id",
+//               as: "owner",
+//               pipeline: [
+//                 {
+//                   $project: {
+//                     fullName: 1,
+//                     username: 1,
+//                     avatar: 1,
+//                   },
+//                 },
+//               ],
+//             },
+//           },
+//           {
+//             $addFields: {
+//               owner: {
+//                 $first: "$owner",
+//               },
+//             },
+//           },
+//         ],
+//       },
+//     },
+//   ]);
 
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        user[0].watchHistory,
-        "Watch history is fetched sucessfully"
-      )
-    );
-});
+//   return res
+//     .status(200)
+//     .json(
+//       new ApiResponse(
+//         200,
+//         user[0].watchHistory,
+//         "Watch history is fetched sucessfully"
+//       )
+//     );
+// });
 
 const getHotels = asyncHandler(async (req, res) => {
   try {
@@ -570,14 +572,13 @@ const HotelDetailPage = asyncHandler(async (req, res) => {
   try {
     const id = req.params.id;
     const hotel = await Hotel.findOne({ _id: id });
-    if(!hotel) 
-      throw new ApiError(404, "Hotel not found")
+    if (!hotel) throw new ApiError(404, "Hotel not found");
 
-    const rooms = await Room.find({hotelId : id})
+    // const rooms = await Room.find({ hotelId: id });
 
     return res
       .status(200)
-      .json(new ApiResponse(200, {hotel, rooms}, "hotel details fetched"));
+      .json(new ApiResponse(200, { hotel }, "hotel details fetched"));
   } catch (error) {
     console.log("🚀 ~ error:", error);
     return res
@@ -588,48 +589,205 @@ const HotelDetailPage = asyncHandler(async (req, res) => {
   }
 });
 
+const getAvailableRooms = asyncHandler(async (req, res) => {
+  console.log("🚀 ~ req:", req.body)
+  try {
+    const id = req?.params?.id;
+    if(!id) throw new ApiError(402, "Hotel id Required");
+    const rooms = await Room.find({ hotelId: id });
+    console.log("heyy all this is the request ", req.body.checkIn);
+
+    // const prevBookings = bookings(req.body.dateData.checkIn, req.body.dateData.checkOut)
+    // console.log("🚀 ~ prevBookings:", prevBookings)
+    // rooms.map(room => {
+    //   room.availableRooms = room.totalRooms
+    // })
+    console.log("🚀 ~ rooms:", rooms)
+    if(!rooms) {
+      //error
+    }
+    return res.status(200)
+      .json(new ApiResponse(200,  rooms , "Rooms Availabilty fetched"));
+  } catch (error) {
+    console.log("🚀 ~ error:", error)
+    throw new ApiError(401, "cannot get rooms")
+    
+  }
+})
+
 const addRooms = asyncHandler(async (req, res) => {
-  // console.log("🚀 ~ req-body it is:", req.body)
   if (!req.user || req.user.role !== "admin") {
     throw new ApiError(400, "This user is not an admin");
   }
   try {
-    const { hotelId, roomType, noOfPersons, price, description } = req.body;
+    const {
+      hotelId,
+      roomType,
+      noOfPersons,
+      price,
+      description,
+      totalRooms,
+      availableRooms,
+    } = req.body;
     const roomPhotoLocalPath = req.file?.path;
     // console.log("🚀 ~ Photo:", photo)
-    if(!roomPhotoLocalPath) throw new ApiError(404, " room photo is required")
+    if (!roomPhotoLocalPath) throw new ApiError(404, " room photo is required");
 
-    const roomPhotoPath = await uploadOnCloudinary(roomPhotoLocalPath)
+    const roomPhotoPath = await uploadOnCloudinary(roomPhotoLocalPath);
 
-    if(!roomPhotoPath?.url) throw new ApiError(404, "error occured while uoloading the hotel image on cloudinary")
+    if (!roomPhotoPath?.url)
+      throw new ApiError(
+        404,
+        "error occured while uoloading the hotel image on cloudinary"
+      );
 
-    
-
-    if(!hotelId)
-      throw new ApiError(400, "Hotel ID is required")
+    if (!hotelId) throw new ApiError(400, "Hotel ID is required");
 
     const room = await Room.create({
       roomType,
       noOfPersons,
       price,
       description,
-      roomPhoto : roomPhotoPath.url,
+      roomPhoto: roomPhotoPath.url,
       hotelId,
+      totalRooms,
+      availableRooms,
     });
 
     res.status(200).json(new ApiResponse(200, room, "room has been added"));
   } catch (error) {
     console.log("🚀 ~ error:", error);
-    res.status(401).json(new ApiError(401, "Something went wrong while adding the rooms"))
+    res
+      .status(401)
+      .json(new ApiError(401, "Something went wrong while adding the rooms"));
   }
 });
 
-const booking = asyncHandler ( async (req, res) => {
-  
+const cart = asyncHandler(async (req, res) => {
+  try {
+    const cart = req.body;
+    console.log("🚀 ~ cart-items:", cart.cartItems);
+
+    for (const room of cart.cartItems) {
+      // console.log("🚀 ~ room:", room)
+      
+      const dbroom = await Room.findById(room.roomId);
+
+      if (!dbroom) {
+        console.log(`Room not found: ${room.roomId}`);
+        continue;
+      }
+
+      dbroom.availableRooms -= room.quantity;
+
+      if (dbroom.availableRooms < 0) {
+        throw new Error(`Not enough rooms available for ${dbroom.roomType}`);
+      }
+
+      await dbroom.save();
+      console.log(
+        `✅ Updated ${dbroom.roomType}: availableRooms = ${dbroom.availableRooms}`
+      );
+    }
+
+    if(!cart.checkIn || !cart.checkOut) throw new ApiError(401, "checkin or checkout date cannot be empty")
+    const booking = await Booking.create({
+      hotel: cart.hotelId,
+      user : req.user._id,
+      hotelRooms : cart.cartItems,
+      bookingAmount: cart.totalAmount,
+      bookingForPeoples: Number(cart.adults) + Number(cart.children),
+      checkInDate: cart.checkIn,
+      checkOutDate: cart.checkOut,
+    });
+    console.log("🚀 ~ booking:", booking)
+
+    if (booking) console.log("booking is created");
 
 
+    const today = new Date();
+    today.setHours(0, 0, 0);
+    if (cart.checkIn < today)
+      throw new ApiError(422, "checkin date shoud be today or in future");
+    if (cart.checkOut < cart.checkIn)
+      throw new ApiError(422, "checkout date shoud be greater checkin date");
 
-}) 
+    if (cart.rooms / cart.adults > 2)
+      throw new ApiError(
+        400,
+        `Book more rooms to accomodate ${cart.adults} these many persons`
+      );
+
+   
+    const response = req.body;
+    return res.status(200).json(new ApiResponse(201, response, "heiii"));
+  } catch (error) {
+    console.log("🚀 ~ error:", error);
+    return res.status(400).json(new ApiError(400, "heiii"));
+  }
+});
+
+// const updateAvailableRooms = async (booking, cartItems) => {
+//   try {
+//     await Promise.all(
+//       cartItems.map(async (item) => {
+//         const room = Room.findById(item.roomId);
+
+//         if (!room) {
+//           console.log("room with this id does not exist ");
+//           return;
+//         }
+
+//         room.availableRooms -= item.quantity;
+
+//         if (room.availableRooms < 0) room.availableRooms = 0;
+
+//         await room.save();
+//       })
+//     );
+//     console.log("Room availbility updated");
+//   } catch (error) {
+//     console.log("🚀 ~ updateAvailableRooms ~ error:", error);
+//     throw new ApiError(422, error);
+//   }
+// };
+
+const bookings = async (checkInDate,checkOutDate) => {
+  try {
+    // const {checkInDate,checkOutDate} = req.body;
+    const overLappingBookings = await Booking.find({
+      checkInDate: { $lt: checkOutDate },
+      checkOutDate: { $gt: checkInDate },
+    });
+    console.log("🚀 ~ bookings ~ overLappingBookings:", overLappingBookings)
+    const roomIds = await overLappingBookings?.data?.flatMap(booking => booking?.hotelRooms);
+    console.log("🚀 ~ bookings ~ roomIds:", roomIds)
+
+
+    
+
+    // let sum = 0;
+    // overLappingBookings.forEach((booking) => {
+      // sum += booking.hotelRooms.length;
+      // booking.hotelRooms.forEach((room) => {
+      //   Room.findById(room).availableRooms -= 1;
+      // });
+
+      // console.log("🚀 ~ bookings ~ sum:", sum)
+    // });
+    // console.log("🚀 ~ bookings ~ overLappingBookings:", overLappingBookings)
+
+    console.log(
+      "🚀 rooms already filled between the checkin and the checkout date "
+    );
+    // return res.status(201)
+    // .json(new ApiResponse(201, overLappingBookings, "booking are fetched"));
+  } catch (error) {
+    console.log("🚀 ~ error:", error);
+    
+    throw new ApiError(401, "something went wrong while fetching the details ")
+  }
+};
 
 export {
   registerUser,
@@ -641,11 +799,14 @@ export {
   updateAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
-  getUserChannelProfile,
-  getWatchHistory,
+  // getUserChannelProfile,
+  // getWatchHistory,
   addHotels,
   getHotels,
   deleteHotel,
   HotelDetailPage,
   addRooms,
+  cart,
+  bookings,
+  getAvailableRooms,
 };

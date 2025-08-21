@@ -1,3 +1,4 @@
+
 import mongoose, { Schema } from "mongoose";
 // import { Hotel } from "./hotel.model";
 
@@ -25,6 +26,10 @@ const roomSchema = new Schema({
   roomPhoto: {
     type: String,
     required: true,
+  },
+  totalRooms : {
+    type : Number,
+    required : true
   },
   availableRooms : {
     type : Number,
