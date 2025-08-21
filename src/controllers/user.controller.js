@@ -597,11 +597,13 @@ const getAvailableRooms = asyncHandler(async (req, res) => {
     const rooms = await Room.find({ hotelId: id });
     console.log("heyy all this is the request ", req.body.checkIn);
 
-    // const prevBookings = bookings(req.body.dateData.checkIn, req.body.dateData.checkOut)
-    // console.log("🚀 ~ prevBookings:", prevBookings)
-    // rooms.map(room => {
-    //   room.availableRooms = room.totalRooms
-    // })
+    console.log("🚀 ~ req.body.dateData:", req.body.dateData)
+    const prevBookings = await bookings(req.body.dateData.checkIn, req.body.dateData.checkOut)
+    console.log("🚀 ~ prevBookings:", prevBookings)
+    rooms.map(room => {
+      room.availableRooms = room.totalRooms - prevBookings;
+      room.save()
+    })
     console.log("🚀 ~ rooms:", rooms)
     if(!rooms) {
       //error
@@ -668,28 +670,7 @@ const cart = asyncHandler(async (req, res) => {
     const cart = req.body;
     console.log("🚀 ~ cart-items:", cart.cartItems);
 
-    for (const room of cart.cartItems) {
-      // console.log("🚀 ~ room:", room)
-      
-      const dbroom = await Room.findById(room.roomId);
-
-      if (!dbroom) {
-        console.log(`Room not found: ${room.roomId}`);
-        continue;
-      }
-
-      dbroom.availableRooms -= room.quantity;
-
-      if (dbroom.availableRooms < 0) {
-        throw new Error(`Not enough rooms available for ${dbroom.roomType}`);
-      }
-
-      await dbroom.save();
-      console.log(
-        `✅ Updated ${dbroom.roomType}: availableRooms = ${dbroom.availableRooms}`
-      );
-    }
-
+   
     if(!cart.checkIn || !cart.checkOut) throw new ApiError(401, "checkin or checkout date cannot be empty")
     const booking = await Booking.create({
       hotel: cart.hotelId,
@@ -766,20 +747,21 @@ const bookings = async (checkInDate,checkOutDate) => {
 
     
 
-    // let sum = 0;
-    // overLappingBookings.forEach((booking) => {
-      // sum += booking.hotelRooms.length;
-      // booking.hotelRooms.forEach((room) => {
-      //   Room.findById(room).availableRooms -= 1;
-      // });
+    let sum = 0;
+    overLappingBookings.forEach((booking) => {
+      sum += booking.hotelRooms.length;
+      booking.hotelRooms.forEach((room) => {
+        Room.findById(room).availableRooms -= 1;
+      });
 
-      // console.log("🚀 ~ bookings ~ sum:", sum)
-    // });
+      console.log("🚀 ~ bookings ~ sum:", sum)
+    });
     // console.log("🚀 ~ bookings ~ overLappingBookings:", overLappingBookings)
 
-    console.log(
-      "🚀 rooms already filled between the checkin and the checkout date "
-    );
+    // console.log(
+    //   "🚀 rooms already filled between the checkin and the checkout date "
+    // );
+    return sum;
     // return res.status(201)
     // .json(new ApiResponse(201, overLappingBookings, "booking are fetched"));
   } catch (error) {
