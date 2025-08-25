@@ -174,27 +174,32 @@ const loginUser = asyncHandler(async (req, res) => {
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
-  await User.findByIdAndUpdate(
-    req.user._id,
-    {
-      $set: {
-        refreshToken: undefined,
+  try {
+    await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        $set: {
+          refreshToken: undefined,
+        },
       },
-    },
-    {
-      new: true,
-    }
-  );
-
-  const options = {
-    httpOnly: true,
-    secure: true,
-  };
-  return res
-    .status(200)
-    .clearCookie("accessToken", options)
-    .clearCookie("refreshToken", options)
-    .json(new ApiResponse(200, {}, "User Logged out"));
+      {
+        new: true,
+      }
+    );
+  
+    const options = {
+      httpOnly: true,
+      secure: true,
+    };
+    return res
+      .status(200)
+      .clearCookie("accessToken", options)
+      .clearCookie("refreshToken", options)
+      .json(new ApiResponse(200, {}, "User Logged out"));
+  } catch (error) {
+    console.log("🚀 ~ error:", error)
+    throw new ApiError(401,"something went wrong while logging out")
+  }
 });
 
 const refreshAcessToken = asyncHandler(async (req, res) => {
@@ -595,9 +600,9 @@ const getAvailableRooms = asyncHandler(async (req, res) => {
     const id = req?.params?.id;
     if(!id) throw new ApiError(402, "Hotel id Required");
     const rooms = await Room.find({ hotelId: id });
-    console.log("heyy all this is the request ", req.body.checkIn);
+    // console.log("heyy all this is the request ", req.body.checkIn);
 
-    console.log("🚀 ~ req.body.dateData:", req.body.dateData)
+    if( req.body.dateData.checkIn==='' || req.body.dateData.checkOut==='') throw new ApiError(402, "cannot be displayed")
     const prevBookings = await bookings(req.body.dateData.checkIn, req.body.dateData.checkOut)
     console.log("🚀 ~ prevBookings:", prevBookings)
     rooms.map(room => {
@@ -655,7 +660,6 @@ const addRooms = asyncHandler(async (req, res) => {
       totalRooms,
       availableRooms,
     });
-
     res.status(200).json(new ApiResponse(200, room, "room has been added"));
   } catch (error) {
     console.log("🚀 ~ error:", error);
@@ -700,7 +704,7 @@ const cart = asyncHandler(async (req, res) => {
       );
 
    
-    const response = req.body;
+    const response = req.body;``
     return res.status(200).json(new ApiResponse(201, response, "heiii"));
   } catch (error) {
     console.log("🚀 ~ error:", error);
@@ -708,30 +712,6 @@ const cart = asyncHandler(async (req, res) => {
   }
 });
 
-// const updateAvailableRooms = async (booking, cartItems) => {
-//   try {
-//     await Promise.all(
-//       cartItems.map(async (item) => {
-//         const room = Room.findById(item.roomId);
-
-//         if (!room) {
-//           console.log("room with this id does not exist ");
-//           return;
-//         }
-
-//         room.availableRooms -= item.quantity;
-
-//         if (room.availableRooms < 0) room.availableRooms = 0;
-
-//         await room.save();
-//       })
-//     );
-//     console.log("Room availbility updated");
-//   } catch (error) {
-//     console.log("🚀 ~ updateAvailableRooms ~ error:", error);
-//     throw new ApiError(422, error);
-//   }
-// };
 
 const bookings = async (checkInDate,checkOutDate) => {
   try {
@@ -756,20 +736,29 @@ const bookings = async (checkInDate,checkOutDate) => {
 
       console.log("🚀 ~ bookings ~ sum:", sum)
     });
-    // console.log("🚀 ~ bookings ~ overLappingBookings:", overLappingBookings)
 
-    // console.log(
-    //   "🚀 rooms already filled between the checkin and the checkout date "
-    // );
     return sum;
-    // return res.status(201)
-    // .json(new ApiResponse(201, overLappingBookings, "booking are fetched"));
   } catch (error) {
     console.log("🚀 ~ error:", error);
     
     throw new ApiError(401, "something went wrong while fetching the details ")
   }
 };
+
+const userBookings = asyncHandler(async(req, res) => {
+  try {
+    const userid = req.user._id
+    const userBooking = await Booking.find({user : userid}).populate('hotel')
+    console.log("🚀 ~ userBooking:", userBooking)
+    console.log("🚀 ~ userBooking-rooms:", userBooking.hotelRooms)
+    res.status(201)
+    .json(new ApiResponse(201, userBooking, "bookings fetched"))
+  } catch (error) {
+    console.log("🚀 ~ error:", error)
+    throw new ApiError(401, "some error occured while getting hotels for user")
+    
+  }
+})
 
 export {
   registerUser,
@@ -791,4 +780,5 @@ export {
   cart,
   bookings,
   getAvailableRooms,
+  userBookings,
 };
