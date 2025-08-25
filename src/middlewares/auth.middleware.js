@@ -9,12 +9,14 @@ export const verifyJWT = asyncHandler(async (req, _, next) => {
     try {
         // here we are using option chaining so that error can be avoided while accessing the nested objects
         const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer", "")
+        console.log("🚀 ~ token:", token)
 
         if (!token || token===undefined) {
             throw new ApiError(401, "unauthorized request")
         }
 
         const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
+        console.log("🚀 ~ decodedToken:", decodedToken)
 
         const user = await User.findById(decodedToken?._id).select("-password -refreshToken")
 
