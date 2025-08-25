@@ -20,6 +20,8 @@ import {
   cart,
   getAvailableRooms,
   userBookings,
+  deleteBooking,
+
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -68,5 +70,6 @@ router.route("/add-rooms").post(verifyJWT, upload.single("roomPhoto"), addRooms)
 router.route("/cart").post(verifyJWT, cart);
 router.route("/bookings").get(verifyJWT, bookings);
 router.route("/user-bookings").get(verifyJWT, userBookings);
+router.route("/deleteBooking").post(verifyJWT, deleteBooking)
 
 export default router;

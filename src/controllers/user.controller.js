@@ -595,32 +595,36 @@ const HotelDetailPage = asyncHandler(async (req, res) => {
 });
 
 const getAvailableRooms = asyncHandler(async (req, res) => {
-  console.log("🚀 ~ req:", req.body)
   try {
     const id = req?.params?.id;
-    if(!id) throw new ApiError(402, "Hotel id Required");
-    const rooms = await Room.find({ hotelId: id });
-    // console.log("heyy all this is the request ", req.body.checkIn);
+    if (!id) throw new ApiError(402, "Hotel ID is required");
 
-    if( req.body.dateData.checkIn==='' || req.body.dateData.checkOut==='') throw new ApiError(402, "cannot be displayed")
-    const prevBookings = await bookings(req.body.dateData.checkIn, req.body.dateData.checkOut)
-    console.log("🚀 ~ prevBookings:", prevBookings)
-    rooms.map(room => {
-      room.availableRooms = room.totalRooms - prevBookings;
-      room.save()
-    })
-    console.log("🚀 ~ rooms:", rooms)
-    if(!rooms) {
-      //error
+    const { checkIn, checkOut, adults } = req.body?.dateData || {};
+
+    if (!checkIn || !checkOut || !adults) {
+      throw new ApiError(402, "Incomplete date or guest details");
     }
-    return res.status(200)
-      .json(new ApiResponse(200,  rooms , "Rooms Availabilty fetched"));
+
+    const rooms = await Room.find({ hotelId: id });
+    if (!rooms || rooms.length === 0) {
+      throw new ApiError(404, "No rooms found for this hotel");
+    }
+
+    for (const room of rooms) {
+      const prevBookings = await bookings(checkIn, checkOut, room._id);
+      room.availableRooms = Math.max(0, room.totalRooms - prevBookings);
+      await room.save();
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, rooms, "Rooms availability fetched"));
   } catch (error) {
-    console.log("🚀 ~ error:", error)
-    throw new ApiError(401, "cannot get rooms")
-    
+    console.log("🚀 ~ getAvailableRooms error:", error);
+    throw new ApiError(401, "Cannot get rooms");
   }
-})
+});
+
 
 const addRooms = asyncHandler(async (req, res) => {
   if (!req.user || req.user.role !== "admin") {
@@ -712,38 +716,62 @@ const cart = asyncHandler(async (req, res) => {
   }
 });
 
+let sum =0
 
-const bookings = async (checkInDate,checkOutDate) => {
+
+const bookings = async (checkInDate, checkOutDate, roomId) => {
+  console.log("🚀 ~ bookings ~ roomId:", roomId)
+  console.log("🚀 ~ bookings ~ roomId:", roomId)
+  // console.log("🚀 ~ bookings ~ roomType:", roomType)
+  console.log("🚀 ~ bookings ~ Booking:", await Booking.find({}))
+
   try {
-    // const {checkInDate,checkOutDate} = req.body;
     const overLappingBookings = await Booking.find({
-      checkInDate: { $lt: checkOutDate },
-      checkOutDate: { $gt: checkInDate },
-    });
-    console.log("🚀 ~ bookings ~ overLappingBookings:", overLappingBookings)
-    const roomIds = await overLappingBookings?.data?.flatMap(booking => booking?.hotelRooms);
-    console.log("🚀 ~ bookings ~ roomIds:", roomIds)
-
-
+  checkInDate: { $lt: checkOutDate },
+  checkOutDate: { $gt: checkInDate },
+  "hotelRooms.roomId": roomId, // dot notation works for nested fields in arrays
+});
     
 
-    let sum = 0;
-    overLappingBookings.forEach((booking) => {
-      sum += booking.hotelRooms.length;
-      booking.hotelRooms.forEach((room) => {
-        Room.findById(room).availableRooms -= 1;
-      });
+    console.log("🚀 ~ bookings ~ overLappingBookings:", overLappingBookings);
 
-      console.log("🚀 ~ bookings ~ sum:", sum)
-    });
+    let sum = 0;
+
+    for (let booking of overLappingBookings) {
+
+      for(let room of booking.hotelRooms){
+
+        if(room.roomId.toString() === roomId.toString())
+
+        sum += room.quantity;
+      }
+
+    }
+    console.log("🚀 ~ bookings ~ sum:", sum)
+    
 
     return sum;
   } catch (error) {
-    console.log("🚀 ~ error:", error);
-    
-    throw new ApiError(401, "something went wrong while fetching the details ")
+    console.log("🚀 ~ bookings error:", error);
+    throw new ApiError(401, "Something went wrong while fetching booking details.");
   }
 };
+
+
+const deleteBooking = asyncHandler(async(req, res) => {
+  try {
+    const {book_id} = req.body;
+    await Booking.findByIdAndDelete(book_id)
+    if(!(await Booking.findById(book_id))) console.log("Hotel is deleted");
+    return res.status(201)
+    .json(new ApiResponse(204, book_id, `booking id ${book_id} is deleted`))
+  } catch (error) {
+    console.log("🚀 ~ error:", error)
+    res.status(401)
+    .json(new ApiError(401, "booking cannot be deleted"))
+    
+  }
+})
 
 const userBookings = asyncHandler(async(req, res) => {
   try {
@@ -781,4 +809,5 @@ export {
   bookings,
   getAvailableRooms,
   userBookings,
+  deleteBooking
 };
