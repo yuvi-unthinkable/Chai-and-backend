@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken'
 
 
 export const verifyJWT = asyncHandler(async (req, _, next) => {
+ console.log("🚀 ~ req:", req.cookies)
  
     try {
         // here we are using option chaining so that error can be avoided while accessing the nested objects
