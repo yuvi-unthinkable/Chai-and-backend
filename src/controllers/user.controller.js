@@ -1,6 +1,6 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
-import { User } from "../models/user.model.js";
+import { User, unVerifiedUser } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/Cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import {sendEmail} from "../utils/sendEmail.js"
@@ -16,7 +16,7 @@ const registerUser = asyncHandler(async (req, res) => {
     const existingUser = await User.findOne({ $or: [{ username }, { email }] });
     if (existingUser) throw new ApiError(409, "User with email or username already exists");
 
-    const user = await User.create({
+    const user = await unVerifiedUser.create({
       fullName,
       email,
       password,
@@ -27,9 +27,9 @@ const registerUser = asyncHandler(async (req, res) => {
 
     const verificationToken = user.getVerificationToken();
     console.log("🚀 ~ verificationToken:", verificationToken)
-    await user.save({ validateBeforeSave: true });
+    await user.save({ validateBeforeSave: false });
 
-    const verificationUrl = `${req.protocol}://${req.get('host')}/api/auth/verify?token=${verificationToken}`;
+    const verificationUrl = `${req.protocol}://${req.get('host')}/api/v1/users/verify/${verificationToken}`;
     const message = `Please verify your email by clicking on this link : ${verificationUrl}`;
     console.log("🚀 ~ message:", message)
 
@@ -74,6 +74,16 @@ const verifyEmail = asyncHandler(async (req, res) => {
     user.isVerified = true;
     user.verificationToken = undefined;
     user.verificationTokenExpire = undefined;
+
+    const newUser = User.create({
+      email,
+      username,
+      password,
+      fullName,
+    })
+
+    newUser.save()
+
     await user.save();
   
     res.status(200).json({ message: "Email verified successfully!" });
