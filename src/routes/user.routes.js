@@ -8,6 +8,7 @@ import {
   updateAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
+  verifyEmail
 } from "../controllers/user.controller.js";
 
 import {
@@ -30,6 +31,7 @@ import { refreshAcessToken } from "../controllers/auth.controller.js";
 
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { get } from "mongoose";
 
 const router = Router();
 const app = express();
@@ -82,5 +84,6 @@ router.route("/cart").post(verifyJWT, cart);
 router.route("/bookings").get(verifyJWT, bookings);
 router.route("/user-bookings").get(verifyJWT, userBookings);
 router.route("/deleteBooking").post(verifyJWT, deleteBooking);
+router.route("/verify/:token").get(verifyEmail);
 
 export default router;

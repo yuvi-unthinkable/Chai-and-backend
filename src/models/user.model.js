@@ -3,6 +3,12 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt"
 import { Hotel } from "./hotel.model.js";
 import { Room } from "./HotelRooms.model.js";
+import crypto from "crypto";
+
+// const crypto  = CryptoJS
+
+
+
 
 const userSchema = new Schema(
     {
@@ -54,6 +60,9 @@ const userSchema = new Schema(
         refreshToken :{
             type : String,
         },
+        isVerified : {
+            type : Boolean,
+        },
         hotel : {
             type : Schema.Types.ObjectId,
             ref : Hotel,
@@ -102,6 +111,19 @@ userSchema.methods.generateRefreshToken = function (){
             expiresIn : process.env.REFRESH_TOKEN_EXPIRY
         }
     )
+}
+
+userSchema.methods.getVerificationToken = function() {
+    const token = crypto.randomBytes(20).toString('hex');
+
+    this. getVerificationToken = crypto
+    .createHash('sha256')
+    .update('token')
+    .digest('hex');
+
+    this.getVerificationToken = Date.now() + 5 *60*1000
+
+    return token;
 }
 
 

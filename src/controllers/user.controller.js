@@ -3,88 +3,75 @@ import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/Cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import {sendEmail} from "../utils/sendEmail.js"
 
 const registerUser = asyncHandler(async (req, res) => {
-  // console.log("🚀 ~ req:", req);
-  // get user details from frontend
-  // validation
-  // check if user already exists : from email and username
-  // files are present or not i.e. avatar and user image
-  // upload them to cloudinary , avatar
-  // create user object - create entry in db
-  // remove pass and refresh token field from response
-  // check for user creation
-  // return response
-
   try {
     const { fullName, email, username, password, role } = req.body;
 
-    if (
-      [fullName, email, username, password, role].some(
-        (field) => field?.trim() === ""
-      )
-    ) {
+    if ([fullName, email, username, password, role].some(f => f?.trim() === "")) {
       throw new ApiError(400, "All fields are required");
     }
 
-    const existingUser = await User.findOne({
-      $or: [{ username }, { email }],
-    });
-    // console.log("🚀 ~ exitedUser:", exitedUser)
-
-    if (existingUser) {
-      throw new ApiError(409, "User with email or username already exists");
-    }
-
-    // const avatarLocalPath = req.files?.avatar[0]?.path;
-    // console.log("🚀 ~ req.files:", req.files)
-    // const coverLocalPath = req.files?.coverImage[0]?.path;
-
-    // if (!avatarLocalPath) {
-    //   throw new ApiError(400, "Avtar image is required");
-    // }
-
-    // const avatar = await uploadOnCloudinary(avatarLocalPath);
-    // const coverImage = await uploadOnCloudinary(coverLocalPath);
-
-    // if (!avatar) {
-    //   throw new ApiError(400, "Avtar image is required");
-    // }
+    const existingUser = await User.findOne({ $or: [{ username }, { email }] });
+    if (existingUser) throw new ApiError(409, "User with email or username already exists");
 
     const user = await User.create({
       fullName,
-      // avatar: avatar?.url || '',
-      //  coverImage: coverImage?.url || "",
       email,
       password,
       username: username.toLowerCase(),
       role,
+      isVerified: false,
     });
 
-    const createdUser = await User.findById(user._id).select(
-      "-password -refreshToken"
-    );
-    if (!createdUser) {
-      throw new ApiError(
-        500,
-        "Something went wrong while registering the user"
-      );
-    }
+    const verificationToken = user.getVerificationToken();
+    await user.save({ validateBeforeSave: false });
 
-    return res
-      .status(201)
-      .json(new ApiResponse(200, createdUser, "User Registered Sucessfully"));
+    const verificationUrl = `${req.protocol}://${req.get('host')}/api/auth/verify?token=${verificationToken}`;
+    const message = `Please verify your email by clicking on this link : ${verificationUrl}`;
+
+    await sendEmail({
+      email: user.email,
+      subject: 'Email Verification',
+      message,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Verification Email sent, please check your inbox"
+    });
+
   } catch (error) {
-    console.log("🚀 ~ error:", error);
-    console.log("🚀 ~ error:", error.message, error.statusCode);
     if (error instanceof ApiError) {
-      return res
-        .status(200)
-        .json(new ApiError(error.statusCode, error.message));
+      return res.status(error.statusCode).json({ success: false, message: error.message });
     }
-    return res.status(200).json(new ApiError(409, "User already exist "));
+    return res.status(500).json({ success: false, message: "Server Error" });
   }
 });
+
+
+const verifyEmail = asyncHandler(async (req, res) => {
+  const token = req.query.token; // 👈 fixed: reading from query
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+  const user = await User.findOne({
+    verificationToken: hashedToken,
+    verificationTokenExpire: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    return res.status(400).json({ message: "Invalid or expired token" });
+  }
+
+  user.isVerified = true;
+  user.verificationToken = undefined;
+  user.verificationTokenExpire = undefined;
+  await user.save();
+
+  res.status(200).json({ message: "Email verified successfully!" });
+});
+
 
 const loginUser = asyncHandler(async (req, res) => {
   // taking username or email and password from the user
@@ -282,4 +269,5 @@ export {
   updateAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
+  verifyEmail
 };
