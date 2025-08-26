@@ -26,10 +26,12 @@ const registerUser = asyncHandler(async (req, res) => {
     });
 
     const verificationToken = user.getVerificationToken();
+    console.log("🚀 ~ verificationToken:", verificationToken)
     await user.save({ validateBeforeSave: false });
 
     const verificationUrl = `${req.protocol}://${req.get('host')}/api/auth/verify?token=${verificationToken}`;
     const message = `Please verify your email by clicking on this link : ${verificationUrl}`;
+    console.log("🚀 ~ message:", message)
 
     await sendEmail({
       email: user.email,
@@ -37,12 +39,15 @@ const registerUser = asyncHandler(async (req, res) => {
       message,
     });
 
+    console.log("email sent");
+
     return res.status(201).json({
       success: true,
       message: "Verification Email sent, please check your inbox"
     });
 
   } catch (error) {
+    console.log("🚀 ~ error:", error)
     if (error instanceof ApiError) {
       return res.status(error.statusCode).json({ success: false, message: error.message });
     }
@@ -52,24 +57,32 @@ const registerUser = asyncHandler(async (req, res) => {
 
 
 const verifyEmail = asyncHandler(async (req, res) => {
-  const token = req.query.token; // 👈 fixed: reading from query
-  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
-
-  const user = await User.findOne({
-    verificationToken: hashedToken,
-    verificationTokenExpire: { $gt: Date.now() },
-  });
-
-  if (!user) {
-    return res.status(400).json({ message: "Invalid or expired token" });
+  try {
+    const token = req.query.token; // 👈 fixed: reading from query
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+  
+    const user = await User.findOne({
+      verificationToken: hashedToken,
+      verificationTokenExpire: { $gt: Date.now() },
+    });
+  
+    if (!user) {
+      console.log("🚀 ~ message:", message)
+      return res.status(400).json({ message: "Invalid or expired token" });
+    }
+  
+    user.isVerified = true;
+    user.verificationToken = undefined;
+    user.verificationTokenExpire = undefined;
+    await user.save();
+  
+    res.status(200).json({ message: "Email verified successfully!" });
+    console.log("🚀 ~ verifyEmail.message:", verifyEmail.message)
+  } catch (error) {
+    console.log("🚀 ~ error:", error)
+    return res.status(400).json(new ApiError(400, "email not verified"))
+    
   }
-
-  user.isVerified = true;
-  user.verificationToken = undefined;
-  user.verificationTokenExpire = undefined;
-  await user.save();
-
-  res.status(200).json({ message: "Email verified successfully!" });
 });
 
 
