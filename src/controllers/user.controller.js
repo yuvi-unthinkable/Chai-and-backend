@@ -27,7 +27,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
     const verificationToken = user.getVerificationToken();
     console.log("🚀 ~ verificationToken:", verificationToken)
-    await user.save({ validateBeforeSave: false });
+    await user.save({ validateBeforeSave: true });
 
     const verificationUrl = `${req.protocol}://${req.get('host')}/api/auth/verify?token=${verificationToken}`;
     const message = `Please verify your email by clicking on this link : ${verificationUrl}`;
@@ -58,7 +58,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
 const verifyEmail = asyncHandler(async (req, res) => {
   try {
-    const token = req.query.token; // 👈 fixed: reading from query
+    const token = req.param.id
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
   
     const user = await User.findOne({
