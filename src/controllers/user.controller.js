@@ -763,7 +763,7 @@ const bookings = async (checkInDate, checkOutDate, roomId, checkInTime, checkOut
         {
           checkOutDate:  parsedCheckinDate, // exact same date
           // checkInTime: { $: Number(checkOutTime) },
-          checkOutTime: { $gt: Number(checkInTime+1) },
+          checkOutTime: { $gt: Number(checkInTime-1) },
         },
       ],
     });
