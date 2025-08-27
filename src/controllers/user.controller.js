@@ -784,7 +784,6 @@ const bookings = async (checkInDate, checkOutDate, roomId, checkInTime, checkOut
     }
     console.log("🚀 ~ bookings ~ sum:", sum);
 
-    res.status(200).json(new ApiResponse(200, sum, "number of booked rooms"));
     return sum;
   } catch (error) {
     console.log("🚀 ~ bookings error:", error);
