@@ -247,7 +247,7 @@ const logoutUser = asyncHandler(async (req, res) => {
       }
     );
 
-     const options = {
+    const options = {
       httpOnly: true,
       secure: true,
       sameSite: "none",
@@ -257,10 +257,7 @@ const logoutUser = asyncHandler(async (req, res) => {
     res.clearCookie("accessToken", options);
     res.clearCookie("refreshToken", options);
 
-
-    return res
-      .status(200)
-      .json(new ApiResponse(200, {}, "User Logged out"));
+    return res.status(200).json(new ApiResponse(200, {}, "User Logged out"));
   } catch (error) {
     console.log("🚀 ~ error:", error);
     throw new ApiError(401, "something went wrong while logging out");
@@ -715,7 +712,38 @@ const cart = asyncHandler(async (req, res) => {
     });
     console.log("🚀 ~ booking:", booking);
 
-    if (booking) console.log("booking is created");
+    if (booking) console.log("Booking is created");
+
+    const formattedCheckIn = new Date(booking.checkInDate).toLocaleDateString();
+    const formattedCheckOut = new Date(
+      booking.checkOutDate
+    ).toLocaleDateString();
+
+    const user = req.user;
+
+    // if hotelRooms is an array, collect room types
+    const roomTypes = Array.isArray(booking.hotelRooms)
+      ? booking.hotelRooms.map((room) => room.roomType).join(", ")
+      : booking.hotelRooms.roomType;
+
+    const message = `
+Congratulations ${user.fullName}, 🎉
+
+Your booking has been confirmed! Here are your booking details:
+
+- Booking ID: ${booking._id}
+- Rooms: ${roomTypes}
+- Check-In: ${formattedCheckIn}
+- Check-Out: ${formattedCheckOut}
+
+We look forward to hosting you! 🏨
+`;
+
+    await sendEmail({
+      email: user.email,
+      subject: "Booking Confirmed",
+      message,
+    });
 
     const today = new Date();
     today.setHours(0, 0, 0);
