@@ -56,10 +56,15 @@ const bookingSchema = new Schema(
       type: Date,
       required: true,
     },
+    checkInTime : {
+      type : Number
+    },
     checkOutDate: {
       type: Date,
       required: true,
     },
+    checkOutTime : Number
+
   },
   { timestamps: true }
 );

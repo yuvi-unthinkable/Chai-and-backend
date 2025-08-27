@@ -3,23 +3,25 @@ import { ApiError } from "../utils/ApiError.js";
 import { User, unVerifiedUser } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/Cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import {sendEmail} from "../utils/sendEmail.js"
+import { sendEmail } from "../utils/sendEmail.js";
 import jwt from "jsonwebtoken";
 import { Hotel } from "../models/hotel.model.js";
 import { Room } from "../models/HotelRooms.model.js";
 import { Booking } from "../models/Booking.model.js";
 
-
 const registerUser = asyncHandler(async (req, res) => {
   try {
     const { fullName, email, username, password, role } = req.body;
 
-    if ([fullName, email, username, password, role].some(f => f?.trim() === "")) {
+    if (
+      [fullName, email, username, password, role].some((f) => f?.trim() === "")
+    ) {
       throw new ApiError(400, "All fields are required");
     }
 
     const existingUser = await User.findOne({ $or: [{ username }, { email }] });
-    if (existingUser) throw new ApiError(409, "User with email or username already exists");
+    if (existingUser)
+      throw new ApiError(409, "User with email or username already exists");
 
     const user = await User.create({
       fullName,
@@ -51,12 +53,13 @@ const registerUser = asyncHandler(async (req, res) => {
     //   message: "Verification Email sent, please check your inbox"
     // });
 
-    return res.status(201).json(new ApiResponse(201, user, "user is created"))
-
+    return res.status(201).json(new ApiResponse(201, user, "user is created"));
   } catch (error) {
-    console.log("🚀 ~ error:", error)
+    console.log("🚀 ~ error:", error);
     if (error instanceof ApiError) {
-      return res.status(error.statusCode).json({ success: false, message: error.message });
+      return res
+        .status(error.statusCode)
+        .json({ success: false, message: error.message });
     }
     return res.status(500).json({ success: false, message: "Server Error" });
   }
@@ -131,23 +134,21 @@ const refreshAcessToken = asyncHandler(async (req, res) => {
   }
 });
 
-
-
 // const verifyEmail = asyncHandler(async (req, res) => {
 //   try {
 //     const token = req.param.id
 //     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
-  
+
 //     const user = await User.findOne({
 //       verificationToken: hashedToken,
 //       verificationTokenExpire: { $gt: Date.now() },
 //     });
-  
+
 //     if (!user) {
 //       console.log("🚀 ~ message:", message)
 //       return res.status(400).json({ message: "Invalid or expired token" });
 //     }
-  
+
 //     user.isVerified = true;
 //     user.verificationToken = undefined;
 //     user.verificationTokenExpire = undefined;
@@ -162,17 +163,15 @@ const refreshAcessToken = asyncHandler(async (req, res) => {
 //     newUser.save()
 
 //     await user.save();
-  
+
 //     res.status(200).json({ message: "Email verified successfully!" });
 //     console.log("🚀 ~ verifyEmail.message:", verifyEmail.message)
 //   } catch (error) {
 //     console.log("🚀 ~ error:", error)
 //     return res.status(400).json(new ApiError(400, "email not verified"))
-    
+
 //   }
 // });
-
-
 
 const loginUser = asyncHandler(async (req, res) => {
   // taking username or email and password from the user
@@ -248,7 +247,7 @@ const logoutUser = asyncHandler(async (req, res) => {
         new: true,
       }
     );
-  
+
     const options = {
       httpOnly: true,
       secure: true,
@@ -259,8 +258,8 @@ const logoutUser = asyncHandler(async (req, res) => {
       .clearCookie("refreshToken", options)
       .json(new ApiResponse(200, {}, "User Logged out"));
   } catch (error) {
-    console.log("🚀 ~ error:", error)
-    throw new ApiError(401,"something went wrong while logging out")
+    console.log("🚀 ~ error:", error);
+    throw new ApiError(401, "something went wrong while logging out");
   }
 });
 
@@ -340,7 +339,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
   const { fullName, email } = req.body;
-  
+
   if (!fullName || !email) {
     throw new ApiError(400, "All fields are required");
   }
@@ -359,8 +358,6 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, user, "Account details updated sucessfully"));
 });
-
-
 
 const addHotels = asyncHandler(async (req, res) => {
   try {
@@ -381,7 +378,7 @@ const addHotels = asyncHandler(async (req, res) => {
     }
 
     if (!req.files || req.files.length < 1) {
-      console.log("🚀 ~ req.files.length:", req.files.length);
+      // console.log("🚀 ~ req.files.length:", req.files.length);
       return res
         .status(400)
         .json(new ApiError(400, "provide at least one image"));
@@ -614,9 +611,10 @@ const getAvailableRooms = asyncHandler(async (req, res) => {
     const id = req?.params?.id;
     if (!id) throw new ApiError(402, "Hotel ID is required");
 
-    const { checkIn, checkOut, adults } = req.body?.dateData || {};
+    const { checkIn, checkOut, adults, checkInTime, checkOutTime } =
+      req.body?.dateData || {};
 
-    if (!checkIn || !checkOut || !adults) {
+    if (!checkIn || !checkOut || !adults || !checkInTime || !checkOutTime) {
       throw new ApiError(402, "Incomplete date or guest details");
     }
 
@@ -626,7 +624,13 @@ const getAvailableRooms = asyncHandler(async (req, res) => {
     }
 
     for (const room of rooms) {
-      const prevBookings = await bookings(checkIn, checkOut, room._id);
+      const prevBookings = await bookings(
+        checkIn,
+        checkOut,
+        room._id,
+        checkInTime,
+        checkOutTime
+      );
       room.availableRooms = Math.max(0, room.totalRooms - prevBookings);
       await room.save();
     }
@@ -687,8 +691,6 @@ const addRooms = asyncHandler(async (req, res) => {
   }
 });
 
-
-
 const cart = asyncHandler(async (req, res) => {
   try {
     const cart = req.body;
@@ -704,6 +706,8 @@ const cart = asyncHandler(async (req, res) => {
       bookingForPeoples: Number(cart.adults) + Number(cart.children),
       checkInDate: cart.checkIn,
       checkOutDate: cart.checkOut,
+      checkInTime: cart.checkInTime,
+      checkOutTime: cart.checkOutTime,
     });
     console.log("🚀 ~ booking:", booking);
 
@@ -733,18 +737,37 @@ const cart = asyncHandler(async (req, res) => {
 
 let sum = 0;
 
-const bookings = async (checkInDate, checkOutDate, roomId) => {
-  console.log("🚀 ~ bookings ~ roomId:", roomId);
-  console.log("🚀 ~ bookings ~ roomId:", roomId);
-  // console.log("🚀 ~ bookings ~ roomType:", roomType)
-  console.log("🚀 ~ bookings ~ Booking:", await Booking.find({}));
+const bookings = async (checkInDate, checkOutDate, roomId, checkInTime, checkOutTime) => {
 
   try {
+
+    const parsedCheckinDate = new Date(checkInDate)
+    const parsedCheckOutDate = new Date(checkOutDate)
+
+    if(!parsedCheckOutDate || !parsedCheckinDate) console.log("error with the date format");
+
     const overLappingBookings = await Booking.find({
-      checkInDate: { $lt: checkOutDate },
-      checkOutDate: { $gt: checkInDate },
-      "hotelRooms.roomId": roomId, // dot notation works for nested fields in arrays
+      
+      "hotelRooms.roomId": roomId,
+
+      
+
+      $or: [
+        // CASE 1: Date ranges overlap
+        {
+          checkInDate: { $lt : parsedCheckOutDate},
+          checkOutDate: { $gt: parsedCheckinDate },
+        },
+        
+        // CASE 2: Same check-in date, but times overlap
+        {
+          checkOutDate:  parsedCheckinDate, // exact same date
+          // checkInTime: { $: Number(checkOutTime) },
+          checkOutTime: { $gt: Number(checkInTime) },
+        },
+      ],
     });
+
 
     console.log("🚀 ~ bookings ~ overLappingBookings:", overLappingBookings);
 
@@ -752,11 +775,16 @@ const bookings = async (checkInDate, checkOutDate, roomId) => {
 
     for (let booking of overLappingBookings) {
       for (let room of booking.hotelRooms) {
-        if (room.roomId.toString() === roomId.toString()) sum += room.quantity;
+        if (room.roomId.toString() === roomId.toString()) {
+          sum += room.quantity;
+          console.log("room id - ", room.roomId);
+          console.log("room qty - ", room.quantity);
+        }
       }
     }
     console.log("🚀 ~ bookings ~ sum:", sum);
 
+    res.status(200).json(new ApiResponse(200, sum, "number of booked rooms"));
     return sum;
   } catch (error) {
     console.log("🚀 ~ bookings error:", error);
@@ -794,8 +822,6 @@ const userBookings = asyncHandler(async (req, res) => {
   }
 });
 
-
-
 export {
   registerUser,
   loginUser,
@@ -813,5 +839,8 @@ export {
   HotelDetailPage,
   addRooms,
   getAvailableRooms,
-   cart, bookings, userBookings, deleteBooking 
+  cart,
+  bookings,
+  userBookings,
+  deleteBooking,
 };
