@@ -9,6 +9,7 @@ import {
   updateUserAvatar,
   updateUserCoverImage,
   // verifyEmail
+  refreshAcessToken
 } from "../controllers/user.controller.js";
 
 import {
@@ -27,7 +28,7 @@ import {
   getAvailableRooms,
 } from "../controllers/hotel.controller.js"
 
-import { refreshAcessToken } from "../controllers/auth.controller.js";
+// import {  } from "../controllers/auth.controller.js";
 
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
