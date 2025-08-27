@@ -8,7 +8,7 @@ import {
   updateAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
-  // verifyEmail
+  verifyEmail,
   refreshAcessToken,
     addHotels,
   getHotels,
@@ -87,6 +87,6 @@ router.route("/cart").post(verifyJWT, cart);
 router.route("/bookings").get(verifyJWT, bookings);
 router.route("/user-bookings").get(verifyJWT, userBookings);
 router.route("/deleteBooking").post(verifyJWT, deleteBooking);
-// router.route("/verify/:token").get(verifyEmail);
+router.route("/verify/:token").get(verifyEmail);
 
 export default router;
