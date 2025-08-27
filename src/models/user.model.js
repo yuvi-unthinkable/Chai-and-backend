@@ -119,18 +119,18 @@ userSchema.methods.generateRefreshToken = function () {
   );
 };
 
-unVerifieduserSchema.methods.getVerificationToken = function () {
-  const token = crypto.randomBytes(20).toString("hex");
+// unVerifieduserSchema.methods.getVerificationToken = function () {
+//   const token = crypto.randomBytes(20).toString("hex");
 
-  this.getVerificationToken = crypto
-    .createHash("sha256")
-    .update("token")
-    .digest("hex");
+//   this.getVerificationToken = crypto
+//     .createHash("sha256")
+//     .update("token")
+//     .digest("hex");
 
-  this.getVerificationToken = Date.now() + 5 * 60 * 1000;
+//   this.getVerificationToken = Date.now() + 5 * 60 * 1000;
 
-  return token;
-};
+//   return token;
+// };
 
 export const unVerifiedUser = mongoose.model(
   "unVerifiedUser",
