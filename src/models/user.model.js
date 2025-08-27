@@ -8,31 +8,16 @@ import crypto from "crypto";
 // const crypto  = CryptoJS
 
 const unVerifieduserSchema = new Schema({
-  username: {
-    type: String,
-    required: true,
-  },
-  fullName: {
-    type: String,
-    required: true,
-  },
-  password: {
-    type: String,
-    required: true,
-  },
-  email: {
-    type: String,
-    required: true,
-  },
-  isVerified: {
-    type: Boolean,
-  }
-});
-
-export const unVerifiedUser = mongoose.model(
-  "unVerifiedUser",
-  unVerifieduserSchema
+  fullName: String,
+  email: { type: String, },
+  username: { type: String, },
+  password: String,
+  verificationToken:String
+},
+{timestamps : true}
 );
+
+
 
 const userSchema = new Schema(
   {
@@ -134,7 +119,7 @@ userSchema.methods.generateRefreshToken = function () {
   );
 };
 
-userSchema.methods.getVerificationToken = function () {
+unVerifieduserSchema.methods.getVerificationToken = function () {
   const token = crypto.randomBytes(20).toString("hex");
 
   this.getVerificationToken = crypto
@@ -146,5 +131,10 @@ userSchema.methods.getVerificationToken = function () {
 
   return token;
 };
+
+export const unVerifiedUser = mongoose.model(
+  "unVerifiedUser",
+  unVerifieduserSchema
+);
 
 export const User = mongoose.model("User", userSchema);
