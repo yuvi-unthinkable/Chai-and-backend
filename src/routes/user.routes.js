@@ -16,14 +16,15 @@ import {
   HotelDetailPage,
   addRooms,
   getAvailableRooms,
-} from "../controllers/user.controller.js";
-
-import {
-  cart,
+    cart,
   bookings,
   userBookings,
   deleteBooking,
-} from "../controllers/bookings.controller.js";
+} from "../controllers/user.controller.js";
+
+// import {
+
+// } from "../controllers/bookings.controller.js";
 
 // import {
   
