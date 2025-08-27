@@ -9,7 +9,13 @@ import {
   updateUserAvatar,
   updateUserCoverImage,
   // verifyEmail
-  refreshAcessToken
+  refreshAcessToken,
+    addHotels,
+  getHotels,
+  deleteHotel,
+  HotelDetailPage,
+  addRooms,
+  getAvailableRooms,
 } from "../controllers/user.controller.js";
 
 import {
@@ -19,14 +25,9 @@ import {
   deleteBooking,
 } from "../controllers/bookings.controller.js";
 
-import {
-    addHotels,
-  getHotels,
-  deleteHotel,
-  HotelDetailPage,
-  addRooms,
-  getAvailableRooms,
-} from "../controllers/hotel.controller.js"
+// import {
+  
+// } from "../controllers/hotel.controller.js"
 
 // import {  } from "../controllers/auth.controller.js";
 
