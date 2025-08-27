@@ -8,6 +8,8 @@ import jwt from "jsonwebtoken";
 import { Hotel } from "../models/hotel.model.js";
 import { Room } from "../models/HotelRooms.model.js";
 import { Booking } from "../models/Booking.model.js";
+import crypto from "crypto";
+
 
 const registerUser = asyncHandler(async (req, res) => {
   try {
@@ -34,18 +36,21 @@ const registerUser = asyncHandler(async (req, res) => {
 
     if(user) {
       const verificationToken = user.getVerificationToken();
+      console.log("🚀 ~ verificationToken:", verificationToken)
       await user.save({validateBeforeSave:false});
     
 
     // send verification mail
-    const verificationUrl = `${req.protocol}://${req.get('host')}/api/verify/${verificationToken}`;
+    const verificationUrl = `${req.protocol}://${req.get('host')}/api/v1/users/verify/${verificationToken}`;
     const message = `Please verify your email by clicking on the following link : ${verificationUrl}`;
     await sendEmail({
       email:user.email,
       subject : 'Email Verification',
       message
     })
-  
+
+    // const token = await unVerifiedUser.$set(verificationToken)
+    // console.log("🚀 ~ token:", token)
 
     
 
@@ -138,23 +143,28 @@ const refreshAcessToken = asyncHandler(async (req, res) => {
 });
 
 const verifyEmail = asyncHandler(async (req, res) => {
+  console.log("🚀 ~ req:", req.body)
+  console.log("🚀 ~ req:", req.params)
   try {
-    const token = req.param.id
+    const token = req.params.token
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+    console.log("🚀 ~ hashedToken:", hashedToken)
 
-    const user = await User.findOne({
+    const user = await unVerifiedUser.findOne({
       verificationToken: hashedToken,
       verificationTokenExpire: { $gt: Date.now() },
     });
+    console.log("🚀 ~ user:", user)
 
     if (!user) {
-      console.log("🚀 ~ message:", message)
       return res.status(400).json({ message: "Invalid or expired token" });
     }
 
     user.isVerified = true;
     user.verificationToken = undefined;
     user.verificationTokenExpire = undefined;
+
+    const {email, username, password, fullName} = user;
 
     const newUser = User.create({
       email,
@@ -163,11 +173,8 @@ const verifyEmail = asyncHandler(async (req, res) => {
       fullName,
     })
 
-    newUser.save()
-
-    await user.save();
-
-    res.status(200).json({ message: "Email verified successfully!" });
+    res.redirect("https://lords-hotel.netlify.app/home"); 
+    // res.status(200).json({ message: "Email verified successfully!" });
     console.log("🚀 ~ verifyEmail.message:", verifyEmail.message)
   } catch (error) {
     console.log("🚀 ~ error:", error)

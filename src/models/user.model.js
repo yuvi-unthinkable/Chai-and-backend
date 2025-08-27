@@ -12,7 +12,8 @@ const unVerifieduserSchema = new Schema({
   email: { type: String, },
   username: { type: String, },
   password: String,
-  verificationToken:String
+  verificationToken:String,
+  verificationTokenExpire: Date,
 },
 {timestamps : true}
 );
@@ -122,13 +123,13 @@ userSchema.methods.generateRefreshToken = function () {
 unVerifieduserSchema.methods.getVerificationToken = function () {
   const token = crypto.randomBytes(20).toString("hex");
 
-  this.getVerificationToken = crypto
+  this.verificationToken = crypto
     .createHash("sha256")
-    .update("token")
+    .update(token)
     .digest("hex");
 
-  this.getVerificationToken = Date.now() + 5 * 60 * 1000;
-
+  this.verificationTokenExpire = Date.now() + 10 * 60 * 1000;
+  
   return token;
 };
 
