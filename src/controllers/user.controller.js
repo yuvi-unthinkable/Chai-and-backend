@@ -238,7 +238,7 @@ const logoutUser = asyncHandler(async (req, res) => {
       req.user._id,
       {
         $set: {
-          acessToken: undefined,
+          // acessToken: undefined,
           refreshToken: undefined,
         },
       },
@@ -246,17 +246,15 @@ const logoutUser = asyncHandler(async (req, res) => {
         new: true,
       }
     );
-     res.clearCookie("token", {
-      httpOnly: true,
-      secure: true, 
-      sameSite: "none"
-    });
-
-
     const options = {
-      httpOnly: true,
-      secure: true,
-    };
+    httpOnly: true,
+    secure: true,
+  };
+  
+  res.clearCookie("accessToken", options);
+  res.clearCookie("refreshToken", options);
+
+  
     return res
       .status(200)
       .clearCookie("accessToken", options)
