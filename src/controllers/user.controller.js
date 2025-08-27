@@ -243,6 +243,7 @@ const logoutUser = asyncHandler(async (req, res) => {
       req.user._id,
       {
         $set: {
+          acessToken : undefined,
           refreshToken: undefined,
         },
       },

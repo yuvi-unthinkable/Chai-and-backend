@@ -1,6 +1,6 @@
 import express, { Router } from "express";
 import {
-   registerUser,
+  registerUser,
   loginUser,
   logoutUser,
   changeCurrentPassword,
@@ -10,13 +10,13 @@ import {
   updateUserCoverImage,
   verifyEmail,
   refreshAcessToken,
-    addHotels,
+  addHotels,
   getHotels,
   deleteHotel,
   HotelDetailPage,
   addRooms,
   getAvailableRooms,
-    cart,
+  cart,
   bookings,
   userBookings,
   deleteBooking,
@@ -27,7 +27,7 @@ import {
 // } from "../controllers/bookings.controller.js";
 
 // import {
-  
+
 // } from "../controllers/hotel.controller.js"
 
 // import {  } from "../controllers/auth.controller.js";
