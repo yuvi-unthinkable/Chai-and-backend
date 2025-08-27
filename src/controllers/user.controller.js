@@ -10,7 +10,6 @@ import { Room } from "../models/HotelRooms.model.js";
 import { Booking } from "../models/Booking.model.js";
 import crypto from "crypto";
 
-
 const registerUser = asyncHandler(async (req, res) => {
   try {
     const { fullName, email, username, password, role } = req.body;
@@ -34,32 +33,30 @@ const registerUser = asyncHandler(async (req, res) => {
       isVerified: false,
     });
 
-    if(user) {
+    if (user) {
       const verificationToken = user.getVerificationToken();
-      console.log("🚀 ~ verificationToken:", verificationToken)
-      await user.save({validateBeforeSave:false});
-    
+      console.log("🚀 ~ verificationToken:", verificationToken);
+      await user.save({ validateBeforeSave: false });
 
-    // send verification mail
-    const verificationUrl = `${req.protocol}://${req.get('host')}/api/v1/users/verify/${verificationToken}`;
-    const message = `Please verify your email by clicking on the following link : ${verificationUrl}`;
-    await sendEmail({
-      email:user.email,
-      subject : 'Email Verification',
-      message
-    })
+      // send verification mail
+      const verificationUrl = `${req.protocol}://${req.get("host")}/api/v1/users/verify/${verificationToken}`;
+      const message = `Please verify your email by clicking on the following link : ${verificationUrl}`;
+      await sendEmail({
+        email: user.email,
+        subject: "Email Verification",
+        message,
+      });
 
-    // const token = await unVerifiedUser.$set(verificationToken)
-    // console.log("🚀 ~ token:", token)
+      // const token = await unVerifiedUser.$set(verificationToken)
+      // console.log("🚀 ~ token:", token)
 
-    
+      console.log("email sent", message);
 
-    console.log("email sent", message);
-
-    return res.status(201).json({
-      success: true,
-      message: "Verification Email sent, please check your inbox"
-    });}
+      return res.status(201).json({
+        success: true,
+        message: "Verification Email sent, please check your inbox",
+      });
+    }
 
     // return res.status(201).json(new ApiResponse(201, user, "user is created"));
   } catch (error) {
@@ -143,18 +140,18 @@ const refreshAcessToken = asyncHandler(async (req, res) => {
 });
 
 const verifyEmail = asyncHandler(async (req, res) => {
-  console.log("🚀 ~ req:", req.body)
-  console.log("🚀 ~ req:", req.params)
+  console.log("🚀 ~ req:", req.body);
+  console.log("🚀 ~ req:", req.params);
   try {
-    const token = req.params.token
+    const token = req.params.token;
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
-    console.log("🚀 ~ hashedToken:", hashedToken)
+    console.log("🚀 ~ hashedToken:", hashedToken);
 
     const user = await unVerifiedUser.findOne({
       verificationToken: hashedToken,
       verificationTokenExpire: { $gt: Date.now() },
     });
-    console.log("🚀 ~ user:", user)
+    console.log("🚀 ~ user:", user);
 
     if (!user) {
       return res.status(400).json({ message: "Invalid or expired token" });
@@ -164,27 +161,25 @@ const verifyEmail = asyncHandler(async (req, res) => {
     user.verificationToken = undefined;
     user.verificationTokenExpire = undefined;
 
-    const {email, username, password, fullName} = user;
+    const { email, username, password, fullName } = user;
 
     const newUser = User.create({
       email,
       username,
       password,
       fullName,
-    })
+    });
 
-    res.redirect("https://lords-hotel.netlify.app/home"); 
+    res.redirect("https://lords-hotel.netlify.app/home");
     // res.status(200).json({ message: "Email verified successfully!" });
-    console.log("🚀 ~ verifyEmail.message:", verifyEmail.message)
+    console.log("🚀 ~ verifyEmail.message:", verifyEmail.message);
   } catch (error) {
-    console.log("🚀 ~ error:", error)
-    return res.status(400).json(new ApiError(400, "email not verified"))
-
+    console.log("🚀 ~ error:", error);
+    return res.status(400).json(new ApiError(400, "email not verified"));
   }
 });
 
 const loginUser = asyncHandler(async (req, res) => {
-
   const { email, username, password } = req.body;
   if (!(username || email)) {
     throw new ApiError(400, "username or password is required");
@@ -243,7 +238,7 @@ const logoutUser = asyncHandler(async (req, res) => {
       req.user._id,
       {
         $set: {
-          acessToken : undefined,
+          acessToken: undefined,
           refreshToken: undefined,
         },
       },
@@ -251,6 +246,12 @@ const logoutUser = asyncHandler(async (req, res) => {
         new: true,
       }
     );
+     res.clearCookie("token", {
+      httpOnly: true,
+      secure: true, 
+      sameSite: "none"
+    });
+
 
     const options = {
       httpOnly: true,
@@ -741,37 +742,38 @@ const cart = asyncHandler(async (req, res) => {
 
 let sum = 0;
 
-const bookings = async (checkInDate, checkOutDate, roomId, checkInTime, checkOutTime) => {
-
+const bookings = async (
+  checkInDate,
+  checkOutDate,
+  roomId,
+  checkInTime,
+  checkOutTime
+) => {
   try {
+    const parsedCheckinDate = new Date(checkInDate);
+    const parsedCheckOutDate = new Date(checkOutDate);
 
-    const parsedCheckinDate = new Date(checkInDate)
-    const parsedCheckOutDate = new Date(checkOutDate)
-
-    if(!parsedCheckOutDate || !parsedCheckinDate) console.log("error with the date format");
+    if (!parsedCheckOutDate || !parsedCheckinDate)
+      console.log("error with the date format");
 
     const overLappingBookings = await Booking.find({
-      
       "hotelRooms.roomId": roomId,
-
-      
 
       $or: [
         // CASE 1: Date ranges overlap
         {
-          checkInDate: { $lt : parsedCheckOutDate},
+          checkInDate: { $lt: parsedCheckOutDate },
           checkOutDate: { $gt: parsedCheckinDate },
         },
-        
+
         // CASE 2: Same check-in date, but times overlap
         {
-          checkOutDate:  parsedCheckinDate, // exact same date
+          checkOutDate: parsedCheckinDate, // exact same date
           // checkInTime: { $: Number(checkOutTime) },
-          checkOutTime: { $gt: Number(checkInTime-1) },
+          checkOutTime: { $gt: Number(checkInTime - 1) },
         },
       ],
     });
-
 
     console.log("🚀 ~ bookings ~ overLappingBookings:", overLappingBookings);
 
