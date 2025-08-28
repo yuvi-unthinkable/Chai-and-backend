@@ -875,7 +875,7 @@ const submitFeedback = asyncHandler(async (req, res) => {
 
 const getUserFeedback = asyncHandler(async(req, res)=> {
   try {
-    const feedbacks = await feedback.findOne({
+    const feedbacks = await feedback.find({
        user : req.body.userId
   })
     console.log("🚀 ~ feedbacks:", feedbacks)
@@ -891,7 +891,7 @@ const getUserFeedback = asyncHandler(async(req, res)=> {
 const getHotelFeedback = asyncHandler(async(req, res)=> {
   try {
     const hotelId = req.params.hotelId;
-    const feedbacks = await feedback.findOne({
+    const feedbacks = await feedback.find({
        hotel : hotelId
   })
     console.log("🚀 ~ feedbacks:", feedbacks)
