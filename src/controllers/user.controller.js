@@ -8,6 +8,7 @@ import jwt from "jsonwebtoken";
 import { Hotel } from "../models/hotel.model.js";
 import { Room } from "../models/HotelRooms.model.js";
 import { Booking } from "../models/Booking.model.js";
+import { feedback } from "../models/feedback.model.js";
 import crypto from "crypto";
 
 const registerUser = asyncHandler(async (req, res) => {
@@ -767,8 +768,6 @@ We look forward to hosting you! 🏨
   }
 });
 
-let sum = 0;
-
 const bookings = async (
   checkInDate,
   checkOutDate,
@@ -854,6 +853,58 @@ const userBookings = asyncHandler(async (req, res) => {
   }
 });
 
+const submitFeedback = asyncHandler(async (req, res) => {
+  try {
+    const { hotel, user, ratingStar, reviewText } = req.body;
+    const review = await feedback.create({
+      hotel,
+      user,
+      ratingStar,
+      reviewText,
+      userName : req.user.fullName
+    });
+    // if(review) review.save()
+    
+    return res.status(201).json(new ApiResponse(201, review, "the feedback has been saved"))
+  } catch (error) {
+    console.log("🚀 ~ error:", error)
+    res.status(400).json(new ApiError(400, "something went wrong while saving the feedback"))
+    
+  }
+});
+
+const getUserFeedback = asyncHandler(async(req, res)=> {
+  try {
+    const feedbacks = await feedback.findOne({
+       user : req.body.userId
+  })
+    console.log("🚀 ~ feedbacks:", feedbacks)
+    return res.status(201).json(new ApiResponse(201, feedbacks, "list of feedbacks fetched"))
+  } catch (error) {
+    console.log("🚀 ~ error:", error)
+    return res.status(400)
+    .json(new ApiError(400, "something went wrong while fetching the  feedbacks "))
+    
+  }
+
+})
+const getHotelFeedback = asyncHandler(async(req, res)=> {
+  try {
+    const feedbacks = await feedback.findOne({
+       hotel : req.body.hotelId
+  })
+    console.log("🚀 ~ feedbacks:", feedbacks)
+    return res.status(201).json(new ApiResponse(201, feedbacks, "list of feedbacks fetched"))
+  } catch (error) {
+    console.log("🚀 ~ error:", error)
+    return res.status(400)
+    .json(new ApiError(400, "something went wrong while fetching the  feedbacks "))
+    
+  }
+
+})
+
+
 export {
   registerUser,
   loginUser,
@@ -875,4 +926,7 @@ export {
   bookings,
   userBookings,
   deleteBooking,
+  submitFeedback,
+  getUserFeedback,
+  getHotelFeedback
 };

@@ -20,6 +20,9 @@ import {
   bookings,
   userBookings,
   deleteBooking,
+  submitFeedback,
+  getUserFeedback,
+  getHotelFeedback,
 } from "../controllers/user.controller.js";
 
 // import {
@@ -88,5 +91,8 @@ router.route("/bookings").get(verifyJWT, bookings);
 router.route("/user-bookings").get(verifyJWT, userBookings);
 router.route("/deleteBooking").post(verifyJWT, deleteBooking);
 router.route("/verify/:token").get(verifyEmail);
+router.route("/feedbackSubmit").post(verifyJWT,submitFeedback);
+router.route("/getUserFeedbacks").get(verifyJWT, getUserFeedback)
+router.route("/getHotelFeedbacks").get(verifyJWT, getHotelFeedback)
 
 export default router;
