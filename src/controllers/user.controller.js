@@ -890,8 +890,9 @@ const getUserFeedback = asyncHandler(async(req, res)=> {
 })
 const getHotelFeedback = asyncHandler(async(req, res)=> {
   try {
+    const hotelId = req.params.hotelId;
     const feedbacks = await feedback.findOne({
-       hotel : req.body.hotelId
+       hotel : hotelId
   })
     console.log("🚀 ~ feedbacks:", feedbacks)
     return res.status(201).json(new ApiResponse(201, feedbacks, "list of feedbacks fetched"))
