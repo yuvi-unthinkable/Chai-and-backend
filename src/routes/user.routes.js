@@ -23,6 +23,7 @@ import {
   submitFeedback,
   getUserFeedback,
   getHotelFeedback,
+  BookingInfo,
 } from "../controllers/user.controller.js";
 
 // import {
@@ -91,8 +92,9 @@ router.route("/bookings").get(verifyJWT, bookings);
 router.route("/user-bookings").get(verifyJWT, userBookings);
 router.route("/deleteBooking").post(verifyJWT, deleteBooking);
 router.route("/verify/:token").get(verifyEmail);
-router.route("/feedbackSubmit").post(verifyJWT,submitFeedback);
+router.route("/feedbackSubmit").post(submitFeedback);
 router.route("/getUserFeedbacks").get(verifyJWT, getUserFeedback)
 router.route("/getHotelFeedbacks/:hotelId").get(verifyJWT, getHotelFeedback)
+router.route("/bookingInfo/:bookId").get(BookingInfo)
 
 export default router;

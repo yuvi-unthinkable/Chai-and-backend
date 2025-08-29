@@ -39,6 +39,14 @@ const bookingSchema = new Schema(
       ref: User,
       required: true,
     },
+    userName : {
+      type : String,
+      required: true,
+    },
+    hotelName : {
+      type : String,
+      required : true
+    },
     hotelRooms: {
       type: [roomSchema],
       required: true,
@@ -63,7 +71,14 @@ const bookingSchema = new Schema(
       type: Date,
       required: true,
     },
-    checkOutTime : Number
+    checkOutTime :{
+      type : Number
+    },
+    feedbackEmailSent : {
+      type : Boolean,
+      default : false
+    }
+    
 
   },
   { timestamps: true }

@@ -10,6 +10,7 @@ import { Room } from "../models/HotelRooms.model.js";
 import { Booking } from "../models/Booking.model.js";
 import { feedback } from "../models/feedback.model.js";
 import crypto from "crypto";
+import cron from "node-cron";
 
 const registerUser = asyncHandler(async (req, res) => {
   try {
@@ -698,6 +699,9 @@ const cart = asyncHandler(async (req, res) => {
     const cart = req.body;
     console.log("🚀 ~ cart-items:", cart.cartItems);
 
+    const hotel = await Hotel.findById(cart.hotelId);
+    console.log("🚀 ~ hotel:", hotel);
+
     if (!cart.checkIn || !cart.checkOut)
       throw new ApiError(401, "checkin or checkout date cannot be empty");
     const booking = await Booking.create({
@@ -710,6 +714,8 @@ const cart = asyncHandler(async (req, res) => {
       checkOutDate: cart.checkOut,
       checkInTime: cart.checkInTime,
       checkOutTime: cart.checkOutTime,
+      userName: req.user.fullName,
+      hotelName: hotel.hotelName,
     });
     console.log("🚀 ~ booking:", booking);
 
@@ -853,57 +859,149 @@ const userBookings = asyncHandler(async (req, res) => {
   }
 });
 
+const BookingInfo = asyncHandler(async (req, res) => {
+  try {
+    const bookId = req.params.bookId;
+    console.log("🚀 ~ bookId:", bookId);
+    const book = await Booking.findById(bookId);
+    console.log("🚀 ~ book:", book);
+    return res
+      .status(200)
+      .json(new ApiResponse(201, book, "Booking details fetched"));
+  } catch (error) {
+    console.log("🚀 ~ error:", error);
+    return res
+      .status(400)
+      .json(
+        new ApiError(400, "Booking details cannot be fetched at this moment")
+      );
+  }
+});
+
 const submitFeedback = asyncHandler(async (req, res) => {
   try {
-    const { hotel, user, ratingStar, reviewText } = req.body;
+    const { hotel, user, ratingStar, reviewText, userName, booking } = req.body;
+
+    if (
+      feedback.find({
+        booking: booking,
+      })
+    ) {
+      return res
+        .status(409)
+        .json(new ApiError(409, "The feedback is already submitted"));
+    }
+
     const review = await feedback.create({
       hotel,
       user,
       ratingStar,
       reviewText,
-      userName : req.user.fullName
+      userName,
+      booking,
     });
     // if(review) review.save()
-    
-    return res.status(201).json(new ApiResponse(201, review, "the feedback has been saved"))
+
+    return res
+      .status(201)
+      .json(new ApiResponse(201, review, "the feedback has been saved"));
   } catch (error) {
-    console.log("🚀 ~ error:", error)
-    res.status(400).json(new ApiError(400, "something went wrong while saving the feedback"))
-    
+    console.log("🚀 ~ error:", error);
+
+    if (error.code === 11000) {
+      return res
+        .status(400)
+        .json(
+          new ApiError(
+            400,
+            "You have already submitted feedback for this hotel"
+          )
+        );
+    }
+    res
+      .status(500)
+      .json(
+        new ApiError(500, "something went wrong while saving the feedback")
+      );
   }
 });
 
-const getUserFeedback = asyncHandler(async(req, res)=> {
+const getUserFeedback = asyncHandler(async (req, res) => {
   try {
     const feedbacks = await feedback.find({
-       user : req.body.userId
-  })
-    console.log("🚀 ~ feedbacks:", feedbacks)
-    return res.status(201).json(new ApiResponse(201, feedbacks, "list of feedbacks fetched"))
+      user: req.body.userId,
+    });
+    console.log("🚀 ~ feedbacks:", feedbacks);
+    return res
+      .status(201)
+      .json(new ApiResponse(201, feedbacks, "list of feedbacks fetched"));
   } catch (error) {
-    console.log("🚀 ~ error:", error)
-    return res.status(400)
-    .json(new ApiError(400, "something went wrong while fetching the  feedbacks "))
-    
+    console.log("🚀 ~ error:", error);
+    return res
+      .status(400)
+      .json(
+        new ApiError(400, "something went wrong while fetching the  feedbacks ")
+      );
   }
-
-})
-const getHotelFeedback = asyncHandler(async(req, res)=> {
+});
+const getHotelFeedback = asyncHandler(async (req, res) => {
   try {
     const hotelId = req.params.hotelId;
     const feedbacks = await feedback.find({
-       hotel : hotelId
-  })
-    console.log("🚀 ~ feedbacks:", feedbacks)
-    return res.status(201).json(new ApiResponse(201, feedbacks, "list of feedbacks fetched"))
+      hotel: hotelId,
+    });
+    console.log("🚀 ~ feedbacks:", feedbacks);
+    return res
+      .status(201)
+      .json(new ApiResponse(201, feedbacks, "list of feedbacks fetched"));
   } catch (error) {
-    console.log("🚀 ~ error:", error)
-    return res.status(400)
-    .json(new ApiError(400, "something went wrong while fetching the  feedbacks "))
-    
+    console.log("🚀 ~ error:", error);
+    return res
+      .status(400)
+      .json(
+        new ApiError(400, "something went wrong while fetching the  feedbacks ")
+      );
   }
+});
 
-})
+cron.schedule(" 0 9 * * *", async () => {
+  console.log("running feedback email job");
+
+  try {
+    const now = new Date();
+    console.log("🚀 ~ now:", now)
+
+    const bookings = await Booking.find({
+      checkOutDate: { $lte: now },   // all bookings with checkout time up to now
+      feedbackEmailSent: false,
+    }).populate("user");
+    console.log("🚀 ~ bookings:", bookings)
+
+    for (const booking of bookings) {
+      const feedbackLink = `http://localhost:5173/bookingInfo/${booking._id}`;
+      const message = `
+Hi ${booking.user.fullName}, 
+
+Thank you for staying with us! We hope you had a great experience.
+Please take a moment to share your feedback: ${feedbackLink}
+`;
+
+      console.log("🚀 ~ booking.user.email,:", booking.user.email,)
+      await sendEmail({
+        email: booking.user.email,
+        subject: "We value your feedback",
+        message,
+      });
+
+      booking.feedbackEmailSent = true;
+      await booking.save();
+
+      console.log(`feedback email sent to ${booking.user.email}`);
+    }
+  } catch (error) {
+    console.log("🚀 ~ error:", error);
+  }
+});
 
 
 export {
@@ -929,5 +1027,6 @@ export {
   deleteBooking,
   submitFeedback,
   getUserFeedback,
-  getHotelFeedback
+  getHotelFeedback,
+  BookingInfo,
 };
