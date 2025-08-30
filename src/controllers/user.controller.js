@@ -969,16 +969,16 @@ cron.schedule(" 0 9 * * *", async () => {
 
   try {
     const now = new Date();
-    console.log("🚀 ~ now:", now)
+    console.log("🚀 ~ now:", now);
 
     const bookings = await Booking.find({
-      checkOutDate: { $lte: now },   // all bookings with checkout time up to now
+      checkOutDate: { $lte: now }, // all bookings with checkout time up to now
       feedbackEmailSent: false,
     }).populate("user");
-    console.log("🚀 ~ bookings:", bookings)
+    console.log("🚀 ~ bookings:", bookings);
 
     for (const booking of bookings) {
-      const feedbackLink = `http://localhost:5173/bookingInfo/${booking._id}`;
+      const feedbackLink = `https://chai-and-backend.onrender.com/bookingInfo/${booking._id}`;
       const message = `
 Hi ${booking.user.fullName}, 
 
@@ -986,7 +986,7 @@ Thank you for staying with us! We hope you had a great experience.
 Please take a moment to share your feedback: ${feedbackLink}
 `;
 
-      console.log("🚀 ~ booking.user.email,:", booking.user.email,)
+      console.log("🚀 ~ booking.user.email,:", booking.user.email);
       await sendEmail({
         email: booking.user.email,
         subject: "We value your feedback",
@@ -1002,7 +1002,6 @@ Please take a moment to share your feedback: ${feedbackLink}
     console.log("🚀 ~ error:", error);
   }
 });
-
 
 export {
   registerUser,

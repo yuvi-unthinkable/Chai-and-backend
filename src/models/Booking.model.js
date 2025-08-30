@@ -65,14 +65,14 @@ const bookingSchema = new Schema(
       required: true,
     },
     checkInTime : {
-      type : Number
+      type : String
     },
     checkOutDate: {
       type: Date,
       required: true,
     },
     checkOutTime :{
-      type : Number
+      type : String
     },
     feedbackEmailSent : {
       type : Boolean,
