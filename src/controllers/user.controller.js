@@ -289,28 +289,36 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 });
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
-  const avatarLocalPath = req.file?.path;
-  // console.log("🚀 ~ avatarLocalPath:", avatarLocalPath)
+  try {
+    const avatarLocalPath = req.file?.path;
+    console.log("🚀 ~ avatarLocalPath:", avatarLocalPath)
 
-  if (!avatarLocalPath) {
-    throw new ApiError(400, "Avatar image is required");
+    if (!avatarLocalPath) {
+      throw new ApiError(400, "Avatar image is required");
+    }
+
+    const avatar = await uploadOnCloudinary(avatarLocalPath);
+    console.log("🚀 ~ avatar:", avatar);
+
+    if (!avatar?.url) {
+      throw new ApiError(400, "Error while uploading avatar to Cloudinary");
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user?._id,
+      { $set: { avatar: avatar.url } },
+      { new: true }
+    ).select("-password");
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, user, "Avatar image updated successfully"));
+  } catch (error) {
+    console.log("🚀 ~ error:", error);
+    return res.status(400).json(
+      new ApiError(400, error)
+    );
   }
-
-  const avatar = await uploadOnCloudinary(avatarLocalPath);
-
-  if (!avatar?.url) {
-    throw new ApiError(400, "Error while uploading avatar to Cloudinary");
-  }
-
-  const user = await User.findByIdAndUpdate(
-    req.user?._id,
-    { $set: { avatar: avatar.url } },
-    { new: true }
-  ).select("-password");
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, user, "Avatar image updated successfully"));
 });
 
 const updateUserCoverImage = asyncHandler(async (req, res) => {
