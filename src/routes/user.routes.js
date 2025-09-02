@@ -26,16 +26,6 @@ import {
   BookingInfo,
 } from "../controllers/user.controller.js";
 
-// import {
-
-// } from "../controllers/bookings.controller.js";
-
-// import {
-
-// } from "../controllers/hotel.controller.js"
-
-// import {  } from "../controllers/auth.controller.js";
-
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { get } from "mongoose";

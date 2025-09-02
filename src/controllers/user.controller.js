@@ -298,7 +298,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     }
 
     const avatar = await uploadOnCloudinary(avatarLocalPath);
-    console.log("🚀 ~ avatar:", avatar);
+    console.log("🚀 ~ avatar url is here:", avatar?.url);
 
     if (!avatar?.url) {
       throw new ApiError(400, "Error while uploading avatar to Cloudinary");
