@@ -9,6 +9,7 @@ const sendEmail = async (options) => {
       pass: process.env.EMAIL_PASSWORD,
     },
   });
+  console.log("🚀 ~ sendEmail ~ transporter:", transporter);
   console.log("EMAIL:", process.env.EMAIL_USERNAME);
   console.log("PASS:", process.env.EMAIL_PASSWORD?.length);
 
